@@ -153,7 +153,7 @@ work around it silently.
   submits. For irreversible actions, an explicit submit control remains
   mandatory (`accessibility.md` §Keyboard Operation).
 - {{If the project later adds a keyboard-aware scroll container, the manual
-  per-field scroll handling above is replaced by it, and this section is
+  per-field scroll handling above is replaced by it, and this section must be
 updated in the same change. A rule that describes a workaround for a
   dependency the project no longer has is a trap.}}
 

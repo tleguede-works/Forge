@@ -77,7 +77,7 @@ flutter gen-l10n                   # regenerate localizations
 
 ## Models (no code generation)
 
-- **`const` constructor on every model that can be const** — such a model is
+- **`const` constructor on every model that can be const** — such a model must be
   const, and const models are compared by identity for free.
 - **Override `==` and `hashCode`** — using the framework's helper, not a
   hand-rolled chain. A model in a set or a map key without this silently

@@ -56,7 +56,7 @@ draft, not the principle.
    present in this project is contamination** (`postmortems.md` Case 2 — and
    note that a grep for library names doesn't catch process vocabulary; a
    separate pass is needed for that). **Corollary, learned the hard way: a
-   generated rule file never names its own source template or profile.** A
+   generated rule file must not name its own source template or profile.** A
    surviving "per the profiles" or a framework symbol from the wrong stack is
    both contamination and a dangling reference.
 

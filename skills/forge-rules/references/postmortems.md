@@ -91,7 +91,7 @@ symbol from another codebase, and the sentence around it is correct.
 
 **The fix, now in the templates and the checklist:**
 
-1. **A generated rule file never names its own source template or profile.**
+1. **A generated rule file must not name its own source template or profile.**
    Not "per the profiles", not "as in the Flutter profile", not a symbol that only
    exists in the template the rule came from. The rule must stand alone or cite
    something the reader has.
@@ -175,8 +175,7 @@ a finding is a defect. Neither existed.
   and tells a future session what to re-check; a recorded workaround just becomes
   wrong.
 - **`audit-checklist.md` gained a —Promotion section**, checked in both
-  directions: no rule contradicted by a finding, and no finding that has been
-  true for several sessions without reaching a rule file.
+  directions: no rule contradicted by a finding, and no finding that has applied beyond its first case for several sessions without reaching a rule file.
 
 ### The one-line takeaway
 
@@ -301,11 +300,11 @@ directory.
   same thing**, called out explicitly as the defect most likely to survive every
   other check; and a check that assertions in the project's own documentation
   are verified rather than inherited.
-- **A template never asserts a countable fact about a tool-generated file.** The
+- **A template must not assert a countable fact about a tool-generated file.** The
   same source documented its lint configuration as "strict 44-rule" when the file
   listed 34 — a number that drifts on the next dependency bump and is false the
   moment it's written. Rule files cite rule *names*, never counts.
-- **A template never carries a claim that isn't true of the template.** A false
+- **A template must not carry a claim that isn't true of the template.** A false
   statement in a reusable template is worse than no statement: it's copied into
   every future project, and it fails in all of them.
 

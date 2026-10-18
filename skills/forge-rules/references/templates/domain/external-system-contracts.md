@@ -132,12 +132,12 @@ Promotion looks like this:
    rule isn't arbitrary.
 
 **Conversely:** an entry that stays project-specific — this store's
-configuration, this environment's quirk — is *correct* where it is and is
-never promoted. The test is whether the statement is true beyond this
+configuration, this environment's quirk — is *correct* where it is and must
+never be promoted. The test is whether the statement is true beyond this
 deployment.
 
 **At review time, check both directions:** a domain rule contradicted by an entry
-here is a defect, and an entry that has been true for several sessions
+here is a defect, and an entry that has applied beyond its first case for several sessions
 without being promoted is a defect.
 
 ## Entries

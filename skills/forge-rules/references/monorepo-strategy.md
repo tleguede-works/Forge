@@ -63,7 +63,7 @@ rule is **never repeated** between root and package: the root states it, the
 package references it. Repetition is how the two drift, and the drift is silent
 because both files still look correct.
 
-**A package can tighten a root rule. It never contradicts one silently** — a
+**A package can tighten a root rule. It must not contradict one silently** — a
 contradiction must be explicit and justified in the package file, or it is a
 defect (`code-review.md` Pass 2).
 
@@ -74,7 +74,7 @@ its own copy: a shared file one package edits breaks the other.
 ## Step 4 — Commands, per package, discovered
 
 This is the part the old layout advice missed. **The root command table is
-wrong for one or more packages**, because a monorepo's packages are built
+often wrong for one or more packages**, because a monorepo's packages are built
 through the orchestrator, not individually.
 
 | Orchestrator | Root, all packages | One package | Only what changed |
@@ -121,7 +121,7 @@ From `quality-gates.md`, which owns the gates themselves. What changes here is
 The rules that make a monorepo a monorepo rather than a folder of projects that
 happen to share a repository.
 
-- **A package imports another package's public entry point only.** Not its
+- **A package imports another package only through its public entry point.** Not its
   internals — that couples the two and makes the dependency unusable when the
   first one refactors.
   - Verify: `{{the import-boundary lint rule for this orchestrator}}`.

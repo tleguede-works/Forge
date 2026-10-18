@@ -102,7 +102,7 @@ target won't read.
 - **Tech overlays are chosen per service, not per repository.** A React service
   and a NestJS service in one monorepo need different overlays, and the
   detection probe runs in each service directory.
-- **A child can tighten a parent rule; it never contradicts one silently.**
+- **A child can tighten a parent rule; it must not contradict one silently.**
 
 ## 6. Where living learnings live
 

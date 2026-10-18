@@ -216,7 +216,7 @@ Handle it honestly:
   Presenting the table and then finding nothing to match reads as a broken tool.
 - **Propose the domains the stack implies, label each as an assumption, and ask
   for confirmation.** A React Native project almost always wants `forms` and
-  `testing`; a project that genuinely has neither says so, and that is
+  `testing`; a project that genuinely has neither must say so, and that is
   worth knowing before the first feature is written.
 
   **Record which ones were confirmed, and which were declined.** A declined
@@ -239,7 +239,7 @@ Handle it honestly:
 script, the linter and the dependency health **from the manifest**. So on day
 one the domain selection is mostly a detection against the manifest rather than
 against the source tree — what is left genuinely undetectable is a short list,
-and it is emitted as **assumptions**, not offered as a menu.
+and it must be emitted as **assumptions**, not offered as a menu.
 
 The rule to keep: **an assumption you do not get ratified is a decision you
 made silently.** Write it down as one, and the variance disappears with it.

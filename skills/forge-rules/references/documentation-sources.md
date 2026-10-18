@@ -51,7 +51,7 @@ project.
 - **The framework's own example directory** in the repository.
 
 Check for these **before** searching the web. A framework that ships guidance for
-agents has written it to answer exactly the questions this run has.
+agents has often written it to answer exactly the questions this run has.
 
 ### Rung 3 — Configured MCP servers
 
@@ -173,7 +173,7 @@ prevents is invisible: the generated code compiles, looks idiomatic, and calls a
 API that moved. The project's first real session discovers it, and by then the
 wrong pattern is in the codebase and in the rules that describe it.
 
-**Which frameworks get this section is a judgement, and it is made
+**Which frameworks get this section is a judgement, and it must be made
 explicitly** in the emitted file rather than assumed. The signal is a release
 cadence that ships breaking changes, and a major version numbering that tracks
 the platform underneath it.

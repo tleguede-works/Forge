@@ -49,8 +49,8 @@ not report them as verified when they were not.
       refactor.
 - [ ] Any two files mentioning the same library — do they agree on the version and
       on the banned patterns? A gap isn't a contradiction yet, but it's a gap.
-- [ ] Any small file closely related to another small file — merge them unless each owns a distinct scope
-      **If yes, it's an absorb, and Step 4's verification runs immediately.**
+- [ ] Any small file closely related to another small file — does each own a distinct scope?
+      **If not, it's an absorb, and Step 4's verification runs immediately.**
 - [ ] **No rule appears in both a domain file and the entry file.** The entry
       file carries the index and the summary, not the domain rules.
 - [ ] For a consolidation: no rule file contains a **second, condensed
@@ -240,7 +240,7 @@ doesn't belong.
       A discovery sitting next to a rule it invalidates has changed nothing, and
       the next session reads the rule, misses the contradiction, and repeats the
       bug.
-- [ ] No entry that has held true for several sessions is still only an
+- [ ] No entry that has applied beyond its first case for several sessions is still only an
       entry. A finding that never reaches a rule file is a diary entry.
 - [ ] Entries record **behaviour, not workarounds** — so a change in the external
       system tells a future session what to re-check, rather than making the

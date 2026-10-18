@@ -31,7 +31,7 @@ below hold regardless.
 > **Interim gate, until a runner exists:** {{the strongest manual verification
 > this project can actually do — e.g. a smoke test of each changed flow on a real
 > build against a real environment}}. Manual verification is **not** a substitute
-> for tests; it is the best available gate today, and it is recorded as
+> for tests; it is the best available gate today, and it must be recorded as
 > provisional.
 
 <!-- Emit when a runner IS configured: -->
@@ -120,7 +120,7 @@ A tested change is complete when **ALL** of:
 | E2E | **critical user journeys only** — see below |
 
 **A new public method on an orchestration unit has one or more tests.** If a
-method is never called, it is not public.
+method is never called, it must not be public.
 
 ## Structure & Naming
 

@@ -33,7 +33,7 @@ that is independently revertible (`git-workflow.md` §Commits). Two unrelated
 changes in one diff is not two reviews, it is one unusable one: the reviewer
 either checks both shallowly or stops.
 
-- A reviewer **never approves their own change.** This is the single rule
+- A reviewer **must not approve their own change.** This is the single rule
   that makes the rest of this file meaningful, and it has no exception for
   "it was small".
 - A review that finds nothing states **what was checked**, not "LGTM".

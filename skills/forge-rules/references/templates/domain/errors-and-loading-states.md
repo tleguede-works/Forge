@@ -130,7 +130,7 @@ An error-handling change is complete when **ALL** of:
 - **A not-found state for any dynamic identifier that can fail to resolve.** An
   invalid or unknown id renders the empty state, not a crash and not a blank
   screen.
-- **A render-time boundary is the only place a raw render error surfaces.**
+- **A render-time boundary is the only place a raw render error is allowed to surface.**
   Recoverable UI beats a blank screen.
 - **A loading boundary only where the wait is genuinely long enough to warrant
   one** — not for content that arrives immediately.

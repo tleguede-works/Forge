@@ -67,7 +67,7 @@ question a line budget can answer is "does this sentence change what the agent
 does", not "is this rule worth having". SKILL.md Principle 6 splits the two for
 exactly this reason.
 
-- Practical ceiling: keep individual rule files under ~500 lines (Cursor's own guidance; content beyond that risks being dropped from context). Total combined "always apply" content stays under roughly 2,000 tokens (~500 lines of plain English) — five 50-line "always apply" files is fine (~1,000-2,000 tokens); twenty 200-line "always apply" files burns 10%+ of the context window before the model reads any actual code.
+- Practical ceiling: keep individual rule files under ~500 lines (Cursor's own guidance; content beyond that risks being dropped from context). Keep the total combined "always apply" content under roughly 2,000 tokens (~500 lines of plain English) — five 50-line "always apply" files is fine (~1,000-2,000 tokens); twenty 200-line "always apply" files burns 10%+ of the context window before the model reads any actual code.
 - One widely-cited convention keeps each *section* to ~50 lines and the *whole root file* to ~150-200 lines, front-loading commands and definition-of-done before any style preference — most rule files that fail were written style-first and never got to the commands.
 - **The decisive test**: ask the agent, cold, to recite its build command and definition of done. If it can't reproduce them, the file is too long (truncated out of context), too vague (nothing concrete to latch onto), or simply not being discovered (check file location and the tool's own docs).
 

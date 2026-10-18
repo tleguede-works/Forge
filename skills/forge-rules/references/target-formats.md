@@ -226,7 +226,7 @@ The wiring is per service, not only at the root:
 Each service's config points at **its own** rules directory, and at the
 `AGENTS.md` in its own directory. The root's `instructions` covers the root's
 `AGENTS.md`; it does not reach into service directories unless its glob says so,
-and it does not — the service files carry the deltas
+and it must not — the service files carry the deltas
 (`stack-detection.md` §Monorepos).
 
 ## Verification

@@ -149,7 +149,7 @@ rule.
 
 Concretely, in a template: a note reading *"Most agents place this here, which
 puts it in the first paint; the audited project moved it because that was the
-measured cost"* produces a rule reading *"place it after the first paint —
+measured cost"* becomes a rule reading *"place it after the first paint —
 placing it earlier was the measured cost in the audited project"*.
 
 ## What NOT to fill in
@@ -195,5 +195,5 @@ therefore forbidden outright, regardless of how well-written they are:
 | **A hedged rule** — "probably X, but verify" | Carries a rule's authority with a guess's reliability; the agent acts on it | A question, a proposed ADR, or an unconfirmed finding |
 
 And one more, which is the failure mode of *this* library specifically: **a
-template never names another template or a source profile.** The rules must
+template must not name another template or a source profile.** The rules must
 stand alone in the project they land in.

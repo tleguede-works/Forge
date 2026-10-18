@@ -200,7 +200,7 @@ catch what the others can't:
   ladder or to an ADR.
 - **Promotion** — for a project with an `external-system-contracts.md`: no
   finding sitting unpromised next to a rule it contradicts, and no finding that
-  has been true for several sessions without reaching a rule file.
+  has applied beyond its first case for several sessions without reaching a rule file.
 - **Divergence** — for a consolidation or an adoption with a migration: every
   detected divergence is either a preserved rule or a migration target. An
   unaccounted one is a rule that was silently dropped.

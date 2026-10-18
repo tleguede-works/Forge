@@ -148,7 +148,7 @@ error, revalidate when settled.
 > **If genuinely unsure which fits: default to wait-for-response.** It is the
 > safer failure mode — a slightly slower UI is a smaller problem than a
 > confidently wrong one. Log the choice in the decisions log if it is significant
-> enough that a future session second-guesses it.
+> enough that a future session would second-guess it.
 
 **Rules that apply to both**
 
