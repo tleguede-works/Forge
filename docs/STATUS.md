@@ -1,0 +1,30 @@
+# Build status
+
+Language rule: repository files in English; deliverables in `.forge/` follow the project language.
+
+## Done and tested (tests/e2e.sh, tests/design.sh, manual installer runs with a fake HOME)
+- CLI: init, status, mode, phase order, register, hash-bound QA and Red Team reviews, gate (check, approve with evidence, client-mode auto rule), memory (resume, checkpoint, decide, learn, log), hooks status, lint-rules, AGENTS.md block injection, design check (one screen per file, ranked anatomy, rules H1 and H2, layout defined, layout regions covered by plans).
+- Gate integration: design phase runs the design check and requires every screen to be registered; plans phase requires every layout region to have a task.
+- Skills: forge, forge-memory, forge-discover, forge-design, forge-architect, forge-plan, forge-build (with references and templates).
+- Agents: forge (orchestrator), forge-qa, forge-redteam, forge-analyst, forge-designer, forge-architect, forge-builder, forge-client-liaison.
+- CLI also covers: check coverage, premises, plans; slice start and done with evidence; phase reopen (resets downstream reviews); client ask, list, resolve, sweep. Tested by tests/flow.sh.
+- Installer: scripts/install.py (auto-detects Claude Code and OpenCode, converts agent frontmatter, merges hooks into settings.json without touching foreign hooks, idempotent, --uninstall). install.sh tested on Linux.
+
+- Integrity: state.json is sealed; a hand edit is refused (R2). Approved deliverables that change afterwards are reported as DRIFT and block the next phase. tests/adversarial.sh covers 10 shortcut scenarios.
+
+## Known limits (judgment, not mechanical)
+- A reviewer report is a JSON file written by an agent; the CLI validates its shape and binds it to the deliverable hash but cannot prove a separate agent wrote it.
+- `--evidence` text for approvals is recorded in the journal; the CLI cannot prove it quotes the user.
+- The seal detects accidental or careless edits to state.json, not a determined forger who reads the CLI source.
+
+## Written, not verified on a live tool
+- install.ps1 and the Windows forge.cmd shim: never run on Windows.
+- OpenCode plugin hooks/opencode-forge.ts and OpenCode skill and agent directories.
+- Claude Code: PostToolUse exit code 2 reaching the model; running the orchestrator as main agent (`claude --agent forge`).
+- `npx skills add` layout: skills/ folders follow the standard layout, not yet tested with the tool.
+
+## Pending
+- Skill: forge-rules.
+- CLI: kit verify, a command that renders the client progress report.
+- Escape-hatch audit by Red Team on all normative files, and scenario tests (manifest section 6.2).
+- Migration notes from Forge v2 and the Project Rules Architect template library (forge-rules).
