@@ -5,7 +5,8 @@ Language rule: repository files in English; deliverables in `.forge/` follow the
 ## Done and tested (tests/e2e.sh, tests/design.sh, manual installer runs with a fake HOME)
 - CLI: init, status, mode, phase order, register, hash-bound QA and Red Team reviews, gate (check, approve with evidence, client-mode auto rule), memory (resume, checkpoint, decide, learn, log), hooks status, lint-rules, AGENTS.md block injection, design check (one screen per file, ranked anatomy, rules H1 and H2, layout defined, layout regions covered by plans).
 - Gate integration: design phase runs the design check and requires every screen to be registered; plans phase requires every layout region to have a task.
-- Skills: forge, forge-memory, forge-discover, forge-design, forge-architect, forge-plan, forge-build (with references and templates).
+- Skills: forge, forge-memory, forge-discover, forge-design, forge-architect, forge-plan, forge-build, forge-rules (with references and templates). forge-rules replaces Project Rules Architect; analysis in docs/forge-rules-analysis.md.
+- `forge rules audit`: ten checks ported from Node to Python (wiring for opencode, claude or agents; index; placeholders; cross-references; thresholds; no Forge coupling; contamination; unenforceable prose; gates are commands; budget with a hard total). One mutation test per check in tests/rules.sh.
 - Agents: forge (orchestrator), forge-qa, forge-redteam, forge-analyst, forge-designer, forge-architect, forge-builder, forge-client-liaison.
 - CLI also covers: check coverage, premises, plans; slice start and done with evidence; phase reopen (resets downstream reviews); client ask, list, resolve, sweep. Tested by tests/flow.sh.
 - Installer: scripts/install.py (auto-detects Claude Code and OpenCode, converts agent frontmatter, merges hooks into settings.json without touching foreign hooks, idempotent, --uninstall). install.sh tested on Linux.
@@ -24,7 +25,8 @@ Language rule: repository files in English; deliverables in `.forge/` follow the
 - `npx skills add` layout: skills/ folders follow the standard layout, not yet tested with the tool.
 
 ## Pending
-- Skill: forge-rules.
+- forge-rules backlog: the copied templates and references hold 120 soft-wording hits (should, may, usually, at least) in 73 files. They are excluded from the lint scope; emitted rule sets are audited by `forge rules audit`. Rewrite them to the strict vocabulary.
+- forge-rules: `templates/core/entry-file.md` still offers a choice between a separate learnings file and an in-entry section; point it at the lessons log.
 - CLI: kit verify, a command that renders the client progress report.
 - Escape-hatch audit by Red Team on all normative files, and scenario tests (manifest section 6.2).
 - Migration notes from Forge v2 and the Project Rules Architect template library (forge-rules).

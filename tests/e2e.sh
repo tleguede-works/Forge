@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # End-to-end test of the Forge CLI. Usage: tests/e2e.sh   (exits non-zero on the first wrong result)
 set -u
-F="python3 $(cd "$(dirname "$0")/.." && pwd)/cli/forge.py"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+F="python3 $ROOT/cli/forge.py"
 T=$(mktemp -d); cd "$T"
 ok()   { "$@" >/dev/null 2>&1 || { echo "FAIL (expected success): $*"; exit 1; }; }
 fail() { "$@" >/dev/null 2>&1 && { echo "FAIL (expected refusal): $*"; exit 1; }; true; }
@@ -36,5 +37,5 @@ ok   $F gate approve --evidence "Yes, validated"
 echo "{{TOKEN}}" > .forge/roadmap.md; ok $F phase start roadmap
 fail $F register roadmap .forge/roadmap.md         # placeholder
 ok $F memory checkpoint --task t --next n; ok $F memory decide --text d; ok $F memory learn --text l
-ok $F lint-rules "$(cd "$(dirname "$0")" 2>/dev/null; pwd)/../skills"
+ok $F lint-rules $(find "$ROOT/skills" "$ROOT/agents" -name "*.md" -not -path "*/forge-rules/references/*")
 echo "ALL PASS"

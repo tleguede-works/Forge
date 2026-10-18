@@ -675,6 +675,235 @@ def cmd_client(a):
         save(r, s); print(f"{len(due)} overdue point(s) decided by default; report them at the next progress report")
 
 
+# ---------------------------------------------------------------- rules audit (forge-rules)
+RULES_DIRS = [".opencode/rules", ".cursor/rules", "rules", ".rules"]
+ENTRY_FILES = ["AGENTS.md", "CLAUDE.md", ".github/copilot-instructions.md"]
+VAGUE = [r"\b(carefully|properly|gracefully|robustly|cleanly|best practices?|make sure to|ensure that)\b",
+         r"\b(as needed|where appropriate|as appropriate|when appropriate|if possible|where possible)\b",
+         r"\b(should|might|try to|consider|ideally|preferably|generally|normally|usually|feel free)\b",
+         r"(proprement|correctement|soigneusement|convenablement|adequatement|bien fait)",
+         r"(si besoin|selon le cas|au besoin|le cas echeant|dans la mesure du possible)"]
+HEDGE = [r"\b(probably|likely|presumably|more or less)\b[^\n]{0,60}\b(but|though|however|verify|confirm)\b",
+         r"(probablement|sans doute|il me semble)[^\n]{0,60}\b(mais|cependant|toutefois|verifier)\b"]
+GATES = {"lint": r"\blint\b|analyse statique", "typecheck": r"\btype-?check\b|\btypage\b",
+         "tests": r"\btests?\b|suite de tests", "coverage": r"\bcoverage\b|\bcouverture\b",
+         "duplication": r"\bduplication\b|copypaste|copie[- ]coller", "vulnerabilities": r"\bvulnerab",
+         "review": r"\breview\b|\brevue\b|code review"}
+THRESH = {"coverage": r"(\d+(?:[.,]\d+)?)\s*%\s*(?:of\s+|de\s+)?(?:test\s+)?(?:coverage|couverture)|(?:coverage|couverture)\s*(?:>=?|min(?:imum)?|threshold)?\s*[:=]?\s*(\d+(?:[.,]\d+)?)\s*%",
+          "duplication": r"(\d+(?:[.,]\d+)?)\s*%\s*(?:of\s+|de\s+)?duplication|duplication\s*(?:<=?|max(?:imum)?|threshold)?\s*[:=]?\s*(\d+(?:[.,]\d+)?)\s*%",
+          "file_size": r"(?:over|more than|above|plus de|au-dela de)\s+(\d{2,4})\s*(?:lines|lignes)|>\s*(\d{2,4})\s*(?:lines|lignes)"}
+FOREIGN = [("flutter", r"\bflutter\b", "flutter"), ("riverpod", r"\bRiverpod\b", "flutter"),
+           ("nextjs", r"\bNext\.js\b", "nextjs"), ("getServerSideProps", r"\bgetServerSideProps\b", "nextjs"),
+           ("NgModule", r"\bNgModule\b", "angular"), ("RxJS", r"\bRxJS\b", "angular"),
+           ("Spring Boot", r"\bSpring Boot\b", "spring"), ("JpaRepository", r"\bJpaRepository\b", "spring"),
+           ("NestJS", r"\bNestJS\b", "nest"), ("jQuery", r"\bjQuery\b", None), ("shadcn", r"\bshadcn\b", None),
+           ("Redux Toolkit", r"\bRedux Toolkit\b", None), ("Zustand", r"\bZustand\b", None)]
+SELFREF = [r"\bper the profiles\b", r"\bthe profiles\b", r"\bthis profile\b", r"\bthe \w+ profile\b",
+           r"\baccording to the template\b", r"\bsource profile\b", r"\.plan\.md", r"MIGRATION_ROADMAP",
+           r"\breferences/templates\b"]
+COUPLING = [r"\.forge\b", r"\bforge (init|status|gate|register|review|phase|memory|slice|client|design|check)\b",
+            r"\bforge\.py\b", r"\bforge-(qa|redteam|analyst|designer|architect|builder)\b"]
+
+
+def _deaccent(x):
+    import unicodedata
+    return "".join(c for c in unicodedata.normalize("NFD", x) if unicodedata.category(c) != "Mn")
+
+
+def _noblock(text):
+    return re.sub(re.escape("<!-- forge:start") + r".*?" + re.escape(END) + r"\n?", "", text, flags=re.S)
+
+
+def _clean(text):
+    return re.sub(r"`[^`\n]*`", lambda m: " " * len(m.group(0)), _noblock(text))
+
+
+def _headnorm(s):
+    s = _deaccent(s).lower()
+    return re.sub(r"[^a-z0-9 ]+", " ", re.sub(r"^\d+[.)]?\s*", "", s.strip())).split()
+
+
+def rules_load(root):
+    rd = next((root / d for d in RULES_DIRS if (root / d).is_dir()), None)
+    files = sorted(p for p in rd.rglob("*") if p.suffix in (".md", ".mdc")) if rd else []
+    entry = next((root / e for e in ENTRY_FILES if (root / e).is_file()), None)
+    return rd, files, entry
+
+
+def stack_of(root):
+    sig = set()
+    if (root / "pubspec.yaml").is_file():
+        sig.add("flutter")
+    pj = root / "package.json"
+    blob = pj.read_text(encoding="utf-8") if pj.is_file() else ""
+    for f in ("pom.xml", "build.gradle", "build.gradle.kts"):
+        if (root / f).is_file():
+            blob += (root / f).read_text(encoding="utf-8")
+    conv = root / ".forge" / "conventions.md"
+    if not blob and conv.is_file():
+        blob = conv.read_text(encoding="utf-8")
+    for k, pat in (("nextjs", r"\"next\"|next\.js"), ("angular", r"@angular/"), ("spring", r"spring-boot|springframework"),
+                   ("nest", r"@nestjs/"), ("flutter", r"flutter"), ("react", r"\"react\"|react native|expo")):
+        if re.search(pat, blob, re.I):
+            sig.add(k)
+    return sig
+
+
+def cmd_rules(a):
+    root = Path(a.path).resolve()
+    rd, files, entry = rules_load(root)
+    texts = {f: f.read_text(encoding="utf-8") for f in files}
+    etext = entry.read_text(encoding="utf-8") if entry else ""
+    rel = lambda f: str(f.relative_to(root))
+    allt = list(texts.items()) + ([(entry, etext)] if entry else [])
+    res = []
+
+    def add(name, offenders):
+        res.append((name, offenders))
+
+    # 1 wiring
+    off = []
+    if a.target == "opencode":
+        cfgf = next((root / c for c in ("opencode.json", "opencode.jsonc", ".opencode/opencode.json") if (root / c).is_file()), None)
+        if not cfgf:
+            off.append("no opencode.json: the rule set is inert")
+        else:
+            try:
+                ins = json.loads(cfgf.read_text(encoding="utf-8")).get("instructions")
+            except ValueError:
+                ins = None; off.append(f"{cfgf.name} is not valid JSON")
+            if ins is not None and (not isinstance(ins, list) or not ins):
+                off.append("no 'instructions' list: nothing is loaded")
+            for pat in ins or []:
+                if "*" in pat:
+                    if not [p for p in root.glob(pat) if p.is_file()]:
+                        off.append(f"glob '{pat}' matches nothing")
+                elif not (root / pat).exists():
+                    off.append(f"path '{pat}' does not exist")
+            if entry and entry.name == "AGENTS.md" and ins and not any(i == "AGENTS.md" for i in ins):
+                off.append("AGENTS.md exists but is not loaded by 'instructions'")
+    elif a.target == "claude":
+        cm = root / "CLAUDE.md"
+        if not cm.is_file():
+            off.append("no CLAUDE.md")
+        elif (root / "AGENTS.md").is_file() and "@AGENTS.md" not in cm.read_text(encoding="utf-8"):
+            off.append("CLAUDE.md does not import @AGENTS.md")
+    elif not (root / "AGENTS.md").is_file():
+        off.append("no AGENTS.md")
+    add("wiring", off)
+
+    # 2 index
+    off = []
+    rows = [l for l in etext.splitlines() if l.strip().startswith("|")]
+    for f, tx in texts.items():
+        rows += [l for l in tx.splitlines() if l.strip().startswith("|")] if re.search(r"\.mdc?\b", "".join(l for l in tx.splitlines() if l.strip().startswith("|"))) else []
+    listed = {m for l in rows for m in re.findall(r"([\w./-]+\.mdc?)\b", l)}
+    for f in files:
+        if f.name not in {Path(x).name for x in listed}:
+            off.append(f"{rel(f)} exists but is not listed in an index table")
+    for x in sorted(listed):
+        if not any((p / x).exists() for p in [root, rd or root]) and not any(f.name == Path(x).name for f in files) and not list(root.rglob(Path(x).name)):
+            off.append(f"index lists '{x}', which does not exist")
+    add("index", off)
+
+    # 3 placeholders
+    off = [f"{rel(f)}:{i}: placeholder" for f, tx in allt for i, l in enumerate(tx.splitlines(), 1)
+           if re.search(r"\{\{[^}]*\}\}|\bTODO\b|\bTBD\b|\bFIXME\b|\bXXX\b|lorem ipsum|\[fill", l)]
+    add("placeholders", off)
+
+    # 4 cross references
+    off = []
+    heads = {f.name: [_headnorm(h) for h in re.findall(r"^#+\s*(.+)$", tx, re.M)] for f, tx in allt}
+    for f, tx in allt:
+        for fn, sec in re.findall(r"`?([\w./-]+\.mdc?)`?\s*§\s*([^\n|.;,)`]+)", tx):
+            hs = heads.get(Path(fn).name)
+            want = _headnorm(sec)
+            if hs is None:
+                off.append(f"{rel(f)}: reference to unknown file {fn}")
+            elif not any(want and all(w in h for w in want) for h in hs):
+                off.append(f"{rel(f)}: {fn} has no section '{sec.strip()}'")
+    add("cross_references", off)
+
+    # 5 thresholds
+    seen = {}
+    for f, tx in allt:
+        body = _deaccent(tx)
+        for k, pat in THRESH.items():
+            for m in re.finditer(pat, body, re.I):
+                v = next((g for g in m.groups() if g), None)
+                if v:
+                    seen.setdefault(k, {}).setdefault(float(v.replace(",", ".")), set()).add(rel(f))
+    add("thresholds", [f"{k} has conflicting values {sorted(v)}" for k, v in seen.items() if len(v) > 1])
+
+    # 6 coupling to the planning tool
+    off = []
+    for f, tx in allt:
+        for i, l in enumerate(_noblock(tx).splitlines(), 1):
+            if any(re.search(p, l) for p in COUPLING):
+                off.append(f"{rel(f)}:{i}: rule text depends on Forge (rules must work without it)")
+    add("no_forge_coupling", off)
+
+    # 7 contamination
+    sig = stack_of(root)
+    off = []
+    for f, tx in allt:
+        body = _clean(tx)
+        for i, l in enumerate(body.splitlines(), 1):
+            for pat in SELFREF:
+                if re.search(pat, l, re.I):
+                    off.append(f"{rel(f)}:{i}: names its own source template or another project's vocabulary")
+            if sig:
+                for name, pat, eco in FOREIGN:
+                    if re.search(pat, l, re.I if name in ("flutter",) else 0) and (eco is None or eco not in sig):
+                        if eco is None and not sig:
+                            continue
+                        off.append(f"{rel(f)}:{i}: '{name}' is not part of the detected stack {sorted(sig)}")
+    add("no_contamination", off)
+
+    # 8 unenforceable prose
+    off = []
+    for f, tx in allt:
+        for i, l in enumerate(_deaccent(_clean(tx)).splitlines(), 1):
+            if re.match(r"^\s*\|?[\s|:-]*$", l):
+                continue
+            for pat in VAGUE + HEDGE:
+                m = re.search(pat, l, re.I)
+                if m:
+                    off.append(f"{rel(f)}:{i}: '{m.group(0)[:30]}'")
+    add("no_unenforceable_prose", off)
+
+    # 9 gates are commands
+    corpus = _deaccent("\n".join(tx for _, tx in allt))
+    off = []
+    for g, pat in GATES.items():
+        lines = [l for l in corpus.splitlines() if re.search(pat, l, re.I)]
+        if not lines:
+            off.append(f"gate '{g}' is never mentioned")
+        elif not any(re.search(r"`[^`]+`", l) for l in lines):
+            off.append(f"gate '{g}' has no command in backticks on any line that names it")
+    if not re.search(r"\bexit 0\b|\bsort 0\b|exit code|--threshold|--fail-on|--audit-level", corpus):
+        off.append("no line states the pass condition (exit 0 or a threshold flag)")
+    add("gates_are_commands", off)
+
+    # 10 budget
+    tot = sum(len(tx.splitlines()) for _, tx in allt)
+    off = [f"{rel(f)} has {len(tx.splitlines())} lines (ceiling 500)" for f, tx in texts.items() if len(tx.splitlines()) > 500]
+    if tot > a.budget:
+        off.append(f"total {tot} lines exceeds the budget {a.budget} (a target without scoping loads every file every session)")
+    add("budget", off)
+
+    bad = [(n, o) for n, o in res if o]
+    if a.json:
+        print(json.dumps({n: o for n, o in res}, indent=2))
+    else:
+        for n, o in res:
+            print(f"[{'FAIL' if o else 'ok  '}] {n}")
+            for x in o[:15]:
+                print("       -", x)
+        print(f"{len(res) - len(bad)}/{len(res)} checks pass; total rule lines {tot}")
+    sys.exit(1 if bad else 0)
+
+
 # ---------------------------------------------------------------- hooks
 def cmd_hooks(a):
     r = need_root(); home = Path.home()
@@ -739,6 +968,9 @@ def main():
     p.add_argument("--kind", default="decision", choices=["decision", "deviation"]); p.add_argument("--what", default="")
     p.add_argument("--price", default=""); p.add_argument("--by", default=""); p.add_argument("--if-no-answer", dest="if_no_answer", default="")
     p.add_argument("--id", type=int, default=0); p.add_argument("--answer", default=""); p.set_defaults(f=cmd_client)
+    p = sub.add_parser("rules"); p.add_argument("action", choices=["audit"]); p.add_argument("path", nargs="?", default=".")
+    p.add_argument("--target", default="opencode", choices=["opencode", "claude", "agents"])
+    p.add_argument("--budget", type=int, default=800); p.add_argument("--json", action="store_true"); p.set_defaults(f=cmd_rules)
     p = sub.add_parser("hooks"); p.add_argument("action", choices=["status"]); p.set_defaults(f=cmd_hooks)
     p = sub.add_parser("lint-rules"); p.add_argument("paths", nargs="+"); p.set_defaults(f=cmd_lint)
     a = ap.parse_args()
