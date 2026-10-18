@@ -34,7 +34,7 @@ Take the stack the scan resolved, run the detection probe
 (`stack-detection.md`), match the table, produce a proposed template set. Don't
 ask what the repository already says.
 
-**Then ask only the gaps the probe can't close.** Usually one or two questions:
+**Then ask only the gaps the probe can't close.** Often one or two questions:
 
 - **Target format** — the one question that can't be inferred. See
   `references/target-formats.md`. **If the user has already stated a preferred
@@ -200,7 +200,7 @@ catch what the others can't:
   ladder or to an ADR.
 - **Promotion** — for a project with an `external-system-contracts.md`: no
   finding sitting unpromised next to a rule it contradicts, and no finding that
-  has been generally true for several sessions without reaching a rule file.
+  has been true for several sessions without reaching a rule file.
 - **Divergence** — for a consolidation or an adoption with a migration: every
   detected divergence is either a preserved rule or a migration target. An
   unaccounted one is a rule that was silently dropped.

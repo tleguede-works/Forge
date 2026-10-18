@@ -9,7 +9,7 @@ draft, not the principle.
    | Tier | Test | Example | Action |
    |---|---|---|---|
    | Tutorial prose | Explains something the model knows from training | A 20-line example showing what a Server Component is | Cut |
-   | **Operational prose** | Answers "what should the agent DO when X?" or "is X acceptable?" — even with no backtick command | "Split by responsibility, not by lines — a 250-line single-responsibility file is fine" | **Keep.** Rewrite tighter if possible; do not delete. |
+   | **Operational prose** | Answers "what must the agent DO when X?" or "is X acceptable?" — even with no backtick command | "Split by responsibility, not by lines — a 250-line single-responsibility file is fine" | **Keep.** Rewrite tighter; do not delete. |
    | Verifiable command | A literal invocation with a pass/fail outcome | `npm run lint` exits 0 | Keep |
 
    The test for the middle tier: *can you imagine the agent violating this?* If
@@ -56,7 +56,7 @@ draft, not the principle.
    present in this project is contamination** (`postmortems.md` Case 2 — and
    note that a grep for library names doesn't catch process vocabulary; a
    separate pass is needed for that). **Corollary, learned the hard way: a
-   generated rule file may never name its own source template or profile.** A
+   generated rule file never names its own source template or profile.** A
    surviving "per the profiles" or a framework symbol from the wrong stack is
    both contamination and a dangling reference.
 

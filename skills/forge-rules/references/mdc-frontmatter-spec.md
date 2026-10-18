@@ -48,7 +48,7 @@ Team Rules (org-level, if configured) > Project Rules (`.cursor/rules/`) > User 
 Cursor auto-discovers `AGENTS.md` at the project root and in subdirectories, in addition to `.cursor/rules/`. Two implications for this skill:
 
 1. For a Cursor-only project with no other tool in the mix, generating `AGENTS.md` as canonical and skipping `.mdc` entirely is a legitimate, simpler choice — reserve `.mdc` for when you actually need glob-based file-type scoping or the intelligent-matching mode, since AGENTS.md has no equivalent to either (it's always loaded in full).
-2. For a multi-tool project, `.mdc` files should reference `AGENTS.md` sections rather than re-deriving the same content, since Cursor will load both.
+2. For a multi-tool project, `.mdc` files reference `AGENTS.md` sections rather than re-deriving the same content, since Cursor will load both.
 
 ## Quick self-test after generating
 

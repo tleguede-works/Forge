@@ -90,7 +90,7 @@ This is the one place where a performance bug looks like a style preference.
 - **`inject()` over constructor injection** in this project, because it works in
   field initialisers and in any injection context. **State the preference; do
   not mix both in one class** — it reads as two conventions and behaves as one.
-- **`providedIn: 'root'` for stateless services.** A service with state should
+- **`providedIn: 'root'` for stateless services.** A service with state must
   be provided explicitly, and the question of *which* scope is a decision
   (`architecture.md` §Conventions).
 - **An injection token over a string** whenever the injected thing is not a
@@ -208,7 +208,7 @@ ng generate directive <name>
 | Symptom | Cause | Fix |
 |---|---|---|
 | `OnPush` component does not update | A `BehaviorSubject` mutated without `markForCheck` or the `async` pipe | Read it through the `async` pipe, or a signal |
-| `ExpressionChangedAfterItHasBeenCheckedError` | State mutated during change detection — usually a setter with a side effect | Compute in a getter |
+| `ExpressionChangedAfterItHasBeenCheckedError` | State mutated during change detection — often a setter with a side effect | Compute in a getter |
 | Subscription outlives the component | `subscribe()` in a field without teardown | The `async` pipe, or `takeUntilDestroyed()` |
 | `ExpressionChanged` in dev only, fine in prod | Development mode re-runs detection a second time | Real lifecycle violation; do not suppress |
 | Everything re-renders on every event | `Default` change detection | `OnPush`, then fix the fallout |

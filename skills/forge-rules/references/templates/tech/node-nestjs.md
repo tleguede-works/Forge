@@ -92,7 +92,7 @@ in `core/` and `domain/`. This file supplies the NestJS mechanisms.
   carrying unexpected fields that are silently dropped is a validation gap.
   {{source: official validation options.}}
 - **DTO properties are declared with validation decorators and nothing else.**
-  A property with no validation decorator is not validated; if it should be,
+  A property with no validation decorator is not validated; if it needs to be,
   declare the constraint; if it shouldn't be in the DTO, remove it.
 
 ## Errors
@@ -126,7 +126,7 @@ the framework composes them. {{source: official request-lifecycle
 documentation: middleware → guards → interceptors (pre) → pipes → controller →
 service → interceptors (post) → exception filters → response.}}
 
-- **Authorization is a guard.** A guard decides whether the request may proceed;
+- **Authorization is a guard.** A guard decides whether the request can proceed;
   it is not a filter over the response.
 - **Validation and transformation are pipes.** They are not guards and not
   middleware.
@@ -218,7 +218,7 @@ nest g interceptor <name>
 ```
 
 - **`nest g resource` is the default for anything with a route.** It wires the
-  provider into the module, and a controller registered by hand is usually not —
+  provider into the module, and a controller registered by hand is often not —
   a route that 404s despite a correct handler is almost always this.
 - **The generated spec is a starting point, not a test.** It asserts the default
   before each. Replace the body; do not keep it as-is, because a spec that only

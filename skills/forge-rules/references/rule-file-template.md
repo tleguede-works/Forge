@@ -149,7 +149,7 @@ rule.
 
 Concretely, in a template: a note reading *"Most agents place this here, which
 puts it in the first paint; the audited project moved it because that was the
-measured cost"* should produce a rule reading *"place it after the first paint —
+measured cost"* produces a rule reading *"place it after the first paint —
 placing it earlier was the measured cost in the audited project"*.
 
 ## What NOT to fill in
@@ -158,8 +158,7 @@ placing it earlier was the measured cost in the audited project"*.
   in human-facing docs — a README, an ADR. If the "why" matters to a judgement
   call the agent will need to make, compress it into one clause attached to the
   rule.
-- **No adjectives without a check attached** — "carefully", "cleanly",
-  "robustly", "gracefully", "where appropriate", "as needed". No command, no
+- **No adjectives without a check attached** — any word from `references/banned-wording.md`. No command, no
   concrete trigger, cut it or give it one.
 - **No long code samples.** Reference a file. Pasted code goes stale silently; a
   file reference stays current.
@@ -196,5 +195,5 @@ therefore forbidden outright, regardless of how well-written they are:
 | **A hedged rule** — "probably X, but verify" | Carries a rule's authority with a guess's reliability; the agent acts on it | A question, a proposed ADR, or an unconfirmed finding |
 
 And one more, which is the failure mode of *this* library specifically: **a
-template may not name another template or a source profile.** The rules must
+template never names another template or a source profile.** The rules must
 stand alone in the project they land in.

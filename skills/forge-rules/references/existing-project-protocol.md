@@ -30,7 +30,7 @@ consolidate, and Step 5b's content-preservation audit applies to them.
 
 **The full protocol below is the right answer for "set up rules for this
 codebase". It is the wrong answer for "I'm adding a feature and I want the
-rules to cover it."** Those are different requests and they should not cost the
+rules to cover it."** Those are different requests and they must not cost the
 same.
 
 | | **Light** | **Full** |
@@ -118,7 +118,7 @@ produce three lists.
 |---|---|
 | **Agreements** | Where the project already does what the template says. The rule is emitted as a normal rule, and the agreement is worth saying — it tells the user the template matched their codebase |
 | **Divergences** | Where the project does something else, consistently. **This is not an error.** It becomes either a preserved rule (Option 1) or a migration target (Option 2) |
-| **Gaps** | Where the template has a rule and the project has no practice at all — no error handling, no form validation, no test coverage. **Also not automatically an error**: it may be a deliberate state, or out of scope. It becomes a rule to follow going forward, or a flagged finding |
+| **Gaps** | Where the template has a rule and the project has no practice at all — no error handling, no form validation, no test coverage. **Also not automatically an error**: it can be a deliberate state, or out of scope. It becomes a rule to follow going forward, or a flagged finding |
 
 **The gap report is shown to the user before any rule is drafted.** It is the
 input to the choice in Step C, and drafting first and asking later wastes the
@@ -146,7 +146,7 @@ silently, and do not ask a question that implies one answer is correct.
 - The template's *rules with no counterpart in the project* are emitted as-is:
   there's no existing practice to contradict, so the template is the only source.
 - A gap is emitted as a rule to follow going forward, and separately reported as
-  a finding. **The user may choose not to adopt it** — and that choice is
+  a finding. **The user can choose not to adopt it** — and that choice is
   recorded, so the next run doesn't re-propose it.
 
 **Use when:** the codebase is healthy, the conventions are deliberate, the
@@ -212,14 +212,14 @@ client rule would be an improvement they'd decline) while migrating its form
 validation (a genuine gap with a real failure mode).
 
 **Offering the choice per dimension is better than offering it once for the
-whole project**, and it is usually what the user actually wants. The gap report's
+whole project**, and it is most often what the user actually wants. The gap report's
 three lists make the split natural.
 
 **If the user declines both** — wants neither preservation nor migration, only
 new features to follow the template — that is a third valid position: emit the
 template's rules scoped to new work, leave the existing code alone, and record
 that the existing code is explicitly out of scope. Say that in the rules, so a
-future session doesn't try to fix it.
+future session does not attempt to fix it.
 
 ## Step D — The external-contracts file starts from history
 

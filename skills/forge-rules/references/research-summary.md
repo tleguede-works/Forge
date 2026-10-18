@@ -7,7 +7,7 @@ Synthesized from Cursor's own `.mdc` documentation and best-practice guides, the
 Tested by running the same task with and without a given instruction, 10+ trials each, comparing completion accuracy:
 
 - **Prose paragraphs without a command.** "We value clean, well-tested code, please ensure changes are properly tested" — the agent represents this as a vague preference and proceeds without running tests, because there's no actionable command, no threshold, no definition of "properly tested."
-- **Vague adjectives.** "Be careful with migrations," "optimize where possible," "handle errors gracefully." None of these are constraints an agent can check against. Compare: "Run `alembic check` before applying migrations. Abort if there's no downgrade path." — a command with a pass/fail outcome.
+- **Vague adjectives.** "Be careful with migrations," "keep it fast," "handle errors gracefully." None of these are constraints an agent can check against. Compare: "Run `alembic check` before applying migrations. Abort if there's no downgrade path." — a command with a pass/fail outcome.
 - **Style guides with no verification command.** "Follow the Google Python Style Guide" gives the agent nothing to check itself against. Pair every style rule with the lint invocation that enforces it, or drop it.
 - **Unranked conflicting priorities.** "Move fast" + "full coverage" + "5-min CI budget" + "run full integration suite before every commit" can't all be satisfied. Research on underspecified software-engineering tasks (Ambig-SWE, ICLR 2026) found models almost never ask a clarifying question on their own when priorities conflict — they silently pick one and skip verification steps. Explicit interactive prompting recovered up to 74% of the lost performance on underspecified tasks; explicit ranking in the rules file does the same thing without needing a live question.
 
@@ -67,7 +67,7 @@ question a line budget can answer is "does this sentence change what the agent
 does", not "is this rule worth having". SKILL.md Principle 6 splits the two for
 exactly this reason.
 
-- Practical ceiling: keep individual rule files under ~500 lines (Cursor's own guidance; content beyond that risks being dropped from context). Total combined "always apply" content should stay under roughly 2,000 tokens (~500 lines of plain English) — five 50-line "always apply" files is fine (~1,000-2,000 tokens); twenty 200-line "always apply" files burns 10%+ of the context window before the model reads any actual code.
+- Practical ceiling: keep individual rule files under ~500 lines (Cursor's own guidance; content beyond that risks being dropped from context). Total combined "always apply" content stays under roughly 2,000 tokens (~500 lines of plain English) — five 50-line "always apply" files is fine (~1,000-2,000 tokens); twenty 200-line "always apply" files burns 10%+ of the context window before the model reads any actual code.
 - One widely-cited convention keeps each *section* to ~50 lines and the *whole root file* to ~150-200 lines, front-loading commands and definition-of-done before any style preference — most rule files that fail were written style-first and never got to the commands.
 - **The decisive test**: ask the agent, cold, to recite its build command and definition of done. If it can't reproduce them, the file is too long (truncated out of context), too vague (nothing concrete to latch onto), or simply not being discovered (check file location and the tool's own docs).
 

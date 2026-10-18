@@ -82,7 +82,7 @@ is not a boundary.
 (`data-and-state.md` §Server State vs UI State). Before adding one:
 
 - **Name the concrete need** it solves that local state plus the server-state
-  layer cannot. "It might be useful later" is not a need.
+  layer cannot. "It could be useful later" is not a need.
 - **Write it in the decisions log** with what was rejected and why. This is the
   rule from the source material that both audited projects stated independently,
   and it is the one that stops the migration from being repeated.

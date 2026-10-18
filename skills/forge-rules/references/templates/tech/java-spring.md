@@ -24,9 +24,7 @@ This file supplies the Spring mechanisms.
 ## Dependency Injection
 
 - **Constructor injection, always.**
-  {{source: official Spring Boot documentation, verbatim: "We generally
-  recommend using constructor injection to wire up dependencies and
-  `@ComponentScan` to find beans." The documentation's stated benefit: it lets
+  {{source: official Spring Boot documentation, which recommends constructor injection to wire up dependencies and `@ComponentScan` to find beans. The documentation's stated benefit: it lets
   the field be `final`.}}
 - **Fields injected by a framework-managed bean are `final`.** A non-final
   injected field is mutable shared state on a singleton, which is a concurrency
@@ -95,7 +93,7 @@ This file supplies the Spring mechanisms.
   message**, and carries a correlation id.
 - **A `5xx` caused by an unhandled exception is logged in full server-side and
   returned to the client as a generic message plus that id.** Never return a
-  stack trace, an exception message that might name an internal class or a
+  stack trace, an exception message that can name an internal class or a
   constraint, or a database error.
 - **Validation failures, business-rule failures, and missing resources are
   distinct codes**, distinguishable by a client without parsing prose.
@@ -112,7 +110,7 @@ This file supplies the Spring mechanisms.
   `@ConditionalOnDefaultServletWebSecurity` and backs off as soon as a
   user-defined `SecurityFilterChain` bean exists. **The consequence: adding the
   bean is what turns the project's own configuration on. A chain that appears to
-  be ignored is usually a second chain, or a chain that was never declared
+  be ignored is often a second chain, or a chain that was never declared
   because the default was assumed to be replaced.}}
 - **Authorization is expressed in the chain and in method security, not
   scattered through controllers.** {{source: the framework's documented
@@ -146,7 +144,7 @@ This file supplies the Spring mechanisms.
   dirty checking and, where it supports it, route to a replica.
 - **A `private` method is not transactional** — the proxy-based mechanism does not
   intercept self-invocation. A `private` method called from within the same class
-  runs in whatever transaction the caller has, which is usually not the one the
+  runs in whatever transaction the caller has, which is often not the one the
   name suggests. {{source: the mechanism is proxy-based interception, so
   self-invocation bypasses it.}}
 - **A method called from inside the same class does not get its own

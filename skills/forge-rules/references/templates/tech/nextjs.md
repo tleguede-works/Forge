@@ -77,7 +77,7 @@ carries a `source:` marker on any rule the project re-derived
   permitted at all, and why.}}
 - **Cross-route data belongs to the data layer**, not to a component's effect
   (`data-and-state.md` §The Mandatory Access Shape).
-- **Page-local, non-shared data** may be fetched in a client component's effect
+- **Page-local, non-shared data** can be fetched in a client component's effect
   — still through the configured client, still typed, still with its states.
 - **A build catches boundary errors that lint and typecheck miss.** It is part of
   the verification order for that reason.
@@ -90,7 +90,7 @@ carries a `source:` marker on any rule the project re-derived
 - **Rely on an inherited boundary when the handling genuinely applies.** Three
   identical boilerplate boundary files is duplication that will drift.
 - **A `{{not-found}}` surface for any route that resolves a dynamic identifier
-  against data that might not exist.** A missing id is a not-found state, not a
+  against data that can be absent.** A missing id is a not-found state, not a
   crash and not a blank screen.
 - **A `{{loading}}` surface where the wait is long enough to warrant one** — not
   for content that arrives immediately. A loading boundary on a fast route adds
@@ -136,7 +136,7 @@ carries a `source:` marker on any rule the project re-derived
   symptom is a build that succeeds and a page that is slower than expected.
 - **A `{{metadata}}` export only applies to the segment that declares it**, and
   a nested segment's metadata replaces rather than merges in some fields. A
-  title that looks right on one route and wrong on a child is usually this.
+  title that looks right on one route and wrong on a child is often this.
 - **`useSearchParams` opts a component out of static rendering.** Wrapping a
   component that only reads search params in a client boundary is the fix, not
   removing the read.

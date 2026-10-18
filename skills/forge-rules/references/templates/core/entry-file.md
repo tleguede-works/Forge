@@ -71,7 +71,7 @@ A task is complete when **ALL** of:
      - Conjunctive. "ALL of" is load-bearing — it is what stops the agent
        reporting done on work that doesn't run.
      - Every item is checkable: a command with an exit code, a named check, or a
-       process step. No item may be a quality judgement.
+       process step. No item is a quality judgement.
      - **The gate table is item 1, and it is item 1 deliberately.** It is the
        only item that can be checked mechanically, and the only one whose
        failure is invisible afterwards. A DoD where the gate is item 6 is a
@@ -135,7 +135,7 @@ When rules or goals conflict, resolve in this order:
      Git-operation bans are deliberately NOT here — they are in
      `git-workflow.md` §When Blocked, which is their domain. Two Never lists in
      one file is fine as long as they don't overlap: this one is about what you
-     may do to the codebase, that one about what you may do to the repository. -->
+     can do to the codebase, that one about what you can do to the repository. -->
 
 ## Git Conventions
 

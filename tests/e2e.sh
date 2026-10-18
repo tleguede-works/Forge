@@ -38,5 +38,5 @@ ok   $F gate approve --evidence "Yes, validated"
 echo "{{TOKEN}}" > .forge/roadmap.md; ok $F phase start roadmap
 fail $F register roadmap .forge/roadmap.md         # placeholder
 ok $F memory checkpoint --task t --next n; ok $F memory decide --text d; ok $F memory learn --text l
-ok $F lint-rules $(find "$ROOT/skills" "$ROOT/agents" -name "*.md" -not -path "*/forge-rules/references/*")
+ok $F lint-rules $(find "$ROOT/skills" "$ROOT/agents" -name "*.md")
 echo "ALL PASS"

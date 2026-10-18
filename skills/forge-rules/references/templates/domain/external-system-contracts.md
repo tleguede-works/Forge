@@ -11,7 +11,7 @@ precisely the cross-project contamination this skill exists to prevent.
 Two rules in here are not in any source file and exist because of a defect found
 in one of them:
 
-  §Promotion Rule — an entry that has become generally applicable must be
+  §Promotion Rule — an entry that applies beyond its first case must be
   promoted into the owning domain rule file. The source project's discoveries
   file accumulated thirteen entries over several days while the domain rule it
   contradicted stayed uncorrected. A findings file that never changes behaviour
@@ -58,7 +58,7 @@ find out.
 - A write operation behaves unexpectedly given its payload — a field silently
   nulls, an option is ignored, a field turns out to be required and isn't
   marked as such.
-- An endpoint that should exist doesn't, or returns a status or shape nobody
+- An endpoint that is expected to exist is absent, or returns a status or shape nobody
   expected for a case that looks handled.
 - The system enforces a constraint the client has to mirror: a rate limit beyond
   the documented one, a maximum, a market or region behaviour, a field only
@@ -80,7 +80,7 @@ find out.
 - reading the system's own source, if accessible
 - an explicit statement from the provider
 
-**Never** from an assumption about how a system of this kind "should" behave.
+**Never** from an assumption about how a system of this kind is supposed to behave.
 Assumptions are how wrong entries get written, and a wrong entry is worse than
 no entry: it is believed, cited, and built on.
 
@@ -113,11 +113,11 @@ Keep each entry to a few lines — enough to act on, not a debugging narrative.
 
 ## Promotion Rule
 
-**An entry that has become generally applicable must be promoted into the
+**An entry that applies beyond its first case must be promoted into the
 owning domain rule file, and the entry stays here as its provenance.**
 
 This is the rule that makes the file a rules file rather than a diary. Without
-it, findings accumulate next to the rules they should have changed, and a
+it, findings accumulate next to the rules they had to change, and a
 session reads the rule, misses the contradiction, and repeats the bug.
 
 Promotion looks like this:
@@ -132,12 +132,12 @@ Promotion looks like this:
    rule isn't arbitrary.
 
 **Conversely:** an entry that stays project-specific — this store's
-configuration, this environment's quirk — is *correct* where it is and should
-never be promoted. The test is whether the statement is true beyond this
+configuration, this environment's quirk — is *correct* where it is and is
+never promoted. The test is whether the statement is true beyond this
 deployment.
 
 **At review time, check both directions:** a domain rule contradicted by an entry
-here is a defect, and an entry that has been generally true for several sessions
+here is a defect, and an entry that has been true for several sessions
 without being promoted is a defect.
 
 ## Entries

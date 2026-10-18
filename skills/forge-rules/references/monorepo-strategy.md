@@ -32,7 +32,7 @@ for a repository that has a root `Makefile` doing the job perfectly well.
 
 Run `stack-detection.md` **in each package directory** and assemble the union. A
 React service and a NestJS service in one repository need different overlays, and
-a single overlay for the whole repository is wrong for at least one of them.
+a single overlay for the whole repository is wrong for one or more of them.
 
 **Shared packages get the treatment too.** A `packages/ui` consumed by three apps
 has a UI layer, an accessibility surface and a public API — the exclusions that
@@ -63,18 +63,18 @@ rule is **never repeated** between root and package: the root states it, the
 package references it. Repetition is how the two drift, and the drift is silent
 because both files still look correct.
 
-**A package may tighten a root rule. It may not contradict one silently** — a
+**A package can tighten a root rule. It never contradicts one silently** — a
 contradiction must be explicit and justified in the package file, or it is a
 defect (`code-review.md` Pass 2).
 
 **Tech overlays are never shared across packages with different stacks.** Two
-packages on the same stack may share a core template's *content*, but each emits
+packages on the same stack can share a core template's *content*, but each emits
 its own copy: a shared file one package edits breaks the other.
 
 ## Step 4 — Commands, per package, discovered
 
 This is the part the old layout advice missed. **The root command table is
-usually wrong for at least one package**, because a monorepo's packages are built
+wrong for one or more packages**, because a monorepo's packages are built
 through the orchestrator, not individually.
 
 | Orchestrator | Root, all packages | One package | Only what changed |
@@ -121,7 +121,7 @@ From `quality-gates.md`, which owns the gates themselves. What changes here is
 The rules that make a monorepo a monorepo rather than a folder of projects that
 happen to share a repository.
 
-- **A package may import another package's public entry point only.** Not its
+- **A package imports another package's public entry point only.** Not its
   internals — that couples the two and makes the dependency unusable when the
   first one refactors.
   - Verify: `{{the import-boundary lint rule for this orchestrator}}`.

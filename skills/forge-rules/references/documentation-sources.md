@@ -2,7 +2,7 @@
 
 The mechanism that keeps the skill from inventing rules. A rule about how a
 framework behaves, asserted from memory, is the most dangerous thing this skill
-can emit: it reads as authoritative, it is usually almost right, and the failure
+can emit: it reads as authoritative, it is almost right, and the failure
 it causes is a silent runtime bug rather than a compile error.
 
 **The rule this file enforces: every technology-specific claim is traceable to a
@@ -27,7 +27,7 @@ searching.
   surface, including the deprecated parts that are still present.
 - **The framework's own configuration file** in the project — what is enabled,
   which options are set, which experiments are on.
-- **The lockfile** — the resolved tree, which may differ from the manifest's
+- **The lockfile** — the resolved tree, which can differ from the manifest's
   ranges.
 - **The project's own tooling output** — a linter's rule list, a type-checker's
   config resolution, a framework's own diagnostic command. These state what is
@@ -45,13 +45,13 @@ project.
 - **A bundled documentation index or agent skill pack.** Some frameworks ship a
   machine-readable index of their documentation, often at a well-known path,
   which exists precisely because prose documentation assumes knowledge the reader
-  may not have. It also commonly carries **corrections to known model
+  lacks. It also commonly carries **corrections to known model
   misconceptions** — which makes it higher-value than the prose docs, not lower.
 - **A local documentation directory**, a vendored copy, an offline package.
 - **The framework's own example directory** in the repository.
 
 Check for these **before** searching the web. A framework that ships guidance for
-agents has usually written it to answer exactly the questions this run has.
+agents has written it to answer exactly the questions this run has.
 
 ### Rung 3 — Configured MCP servers
 
@@ -64,7 +64,7 @@ fetch.
   version-matched content.
 - **Framework-specific servers** often expose version-pinned documentation, API
   references, and — valuably — example code for the installed major version.
-- A project may have its own server exposing internal APIs, which no public
+- A project can have its own server exposing internal APIs, which no public
   documentation describes at all.
 
 **This rung is also where project-specific knowledge lives** that no public
@@ -77,7 +77,7 @@ than rungs 4 and 5 combined.
 Only when rungs 1–3 don't answer it. Two constraints, both load-bearing:
 
 - **The exact pinned version.** A documentation site serves one version by
-  default, usually the newest, and the newest is not this project. Fetch the
+  default, often the newest, and the newest is not this project. Fetch the
   versioned path.
 - **The official source** — the framework's own documentation, not a tutorial, a
   blog post, a course, or an answer on a forum. A tutorial is someone's
@@ -146,7 +146,7 @@ tell a verified fact from a plausible guess. Both look identical on the page.
 
 1. **A question to the user.** "Does this project's backend accept a partial
    update, or is it a full replacement?" is a real question with a real cost
-   either way, and the project may know the answer.
+   either way, and the project can know the answer.
 2. **A project decision, proposed as an ADR.** "This project uses partial
    updates" — if it turns out to be wrong, the wrongness is discoverable and
    correctable, which a confidently-stated framework fact is not.
@@ -173,7 +173,7 @@ prevents is invisible: the generated code compiles, looks idiomatic, and calls a
 API that moved. The project's first real session discovers it, and by then the
 wrong pattern is in the codebase and in the rules that describe it.
 
-**Which frameworks get this section is a judgement, and it should be made
+**Which frameworks get this section is a judgement, and it is made
 explicitly** in the emitted file rather than assumed. The signal is a release
 cadence that ships breaking changes, and a major version numbering that tracks
 the platform underneath it.

@@ -28,7 +28,7 @@ type roles, the elevation model, the spacing scale — and where each part lives
 if it is split across files.}}
 
 - **Reference the contract, never restate it.** This file does not list the
-  project's colours, and neither should any other rule file. A duplicated token
+  project's colours, and no other rule file does. A duplicated token
   list is a second source of truth, and it is the single most common way a
   design system stops matching the code.
 - **When a rule elsewhere needs a token, it cites the contract by name.** If the

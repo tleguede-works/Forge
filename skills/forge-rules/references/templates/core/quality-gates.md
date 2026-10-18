@@ -99,7 +99,7 @@ sans signal : le rapport reste vert parce que personne ne regarde.
 | Typecheck | `{{npm run typecheck}}` | 0 errors | A type was widened or suppressed to make an error go away |
 | Tests | `{{npm test}}` | 0 failures, 0 skipped | A regression, or a test deleted to hide one |
 | Coverage | `{{npm run test:coverage}}` | ≥ **80 %** | New code arrived untested |
-| Duplication | `{{npx jscpd --threshold 3 src}}` | ≤ **3 %** | A second copy exists where a shared module should |
+| Duplication | `{{npx jscpd --threshold 3 src}}` | ≤ **3 %** | A second copy exists where a shared module is needed |
 | Vulnerabilities | `{{npm audit --audit-level=high}}` | **0** | A known CVE is reachable in the dependency tree |
 | Doctor | `{{npx depcheck}}` or `{{mvn dependency:analyze}}` | 0 unused, 0 missing | A dependency was added for comfort, or removed and still imported |
 

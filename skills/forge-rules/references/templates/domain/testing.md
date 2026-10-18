@@ -31,7 +31,7 @@ below hold regardless.
 > **Interim gate, until a runner exists:** {{the strongest manual verification
 > this project can actually do — e.g. a smoke test of each changed flow on a real
 > build against a real environment}}. Manual verification is **not** a substitute
-> for tests; it is the best available gate today, and it should be recorded as
+> for tests; it is the best available gate today, and it is recorded as
 > provisional.
 
 <!-- Emit when a runner IS configured: -->
@@ -57,8 +57,8 @@ commands.
 A tested change is complete when **ALL** of:
 
 1. The suite passes.
-2. **New or changed business logic has at least one test covering the primary
-   path**, plus at least one error or edge case.
+2. **New or changed business logic has one or more tests covering the primary
+   path**, plus one or more error or edge cases.
 3. **Every normalizer/mapper has a round-trip test** — raw → model → raw.
 4. **Every validation schema is tested directly** — valid input passes, each
    invalid case produces the expected field error.
@@ -119,8 +119,8 @@ A tested change is complete when **ALL** of:
 | Integration | the real wiring between two units that actually talk to each other |
 | E2E | **critical user journeys only** — see below |
 
-**A new public method on an orchestration unit has at least one test.** If a
-method is never called, it should not be public.
+**A new public method on an orchestration unit has one or more tests.** If a
+method is never called, it is not public.
 
 ## Structure & Naming
 
@@ -128,7 +128,7 @@ method is never called, it should not be public.
 - **File name matches the unit under test.**
 - **Group name is the class or the concept** under test.
 - **Test name is a sentence starting with an action verb** — *returns*,
-  *throws*, *preserves*, *emits*, *rejects*. `{{should work}}` and
+  *throws*, *preserves*, *emits*, *rejects*. `{{works correctly}}` and
   `{{test 1}}` are not names.
 - {{e2e file}} — one file per journey, named for the journey
   (`{{checkout-completes.spec}}`), not for the page.

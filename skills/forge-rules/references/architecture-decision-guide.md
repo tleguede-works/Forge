@@ -30,7 +30,7 @@ If two technologies are always used together, they're one file.
   Run the verification immediately: list the source's discrete rules, confirm
   each survives in the target. A 100-line file becoming five lines is not a
   merge, it's undocumented deletion (`postmortems.md` Case 1).
-- **Split** when a file approaches ~400–500 lines. That's usually the point where
+- **Split** when a file approaches ~400–500 lines. That is the point where
   it's doing two jobs.
 - **Reference, don't repeat.** Where a fact is stated in the canonical file,
   every other file cites it **by section**, not by file name. A file-level
@@ -45,7 +45,7 @@ invisible to any cross-file check (`postmortems.md` Case 4).
 
 Cross-cutting rules live in exactly one file. Two things make that work:
 
-- **The canonical file states it in full.** Not a pointer to where it might be.
+- **The canonical file states it in full.** Not a pointer to a file that holds it.
 - **Everything else references it by section.**
 
 **A fact stated in two places with different wording is the dominant real-world
@@ -80,7 +80,7 @@ and the most commonly got wrong.
 
 **For AGENTS.md-only targets there is no activation mode** — the file loads in
 full, every session. That is the real trade: a single portable file is simpler
-and always complete, and it is why a rule set that outgrows one file should move
+and always complete, and it is why a rule set that outgrows one file must move
 to a target with activation modes rather than be split into a directory the
 target won't read.
 
@@ -102,7 +102,7 @@ target won't read.
 - **Tech overlays are chosen per service, not per repository.** A React service
   and a NestJS service in one monorepo need different overlays, and the
   detection probe runs in each service directory.
-- **A child may tighten a parent rule; it may not contradict one silently.**
+- **A child can tighten a parent rule; it never contradicts one silently.**
 
 ## 6. Where living learnings live
 

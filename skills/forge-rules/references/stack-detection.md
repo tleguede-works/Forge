@@ -190,13 +190,13 @@ act on.
 - **A rule is not repeated between root and service.** The root states it, the
   service references it. Repetition is how the two drift.
 - **Tech overlays are never shared across services** with different stacks. Two
-  services on the same stack may share a core template's *content*, but each
+  services on the same stack can share a core template's *content*, but each
   emits its own copy — a shared file that one service edits breaks the other.
   Where the tool supports directory-scoped instruction files, use them; the
   portability of a single canonical file is a deliberate trade against this.
 
 **Run the probe in each service directory.** One overlay for the repository is
-wrong for at least one service, and the service that gets the wrong overlay is
+wrong for one or more services, and the service that gets the wrong overlay is
 the one nobody notices.
 
 ## On a project with no code yet
@@ -212,11 +212,11 @@ manifest names — and the domain selection becomes a **question, not a lookup**
 Handle it honestly:
 
 - **Say so.** "The project has no code yet, so the domain rules are a choice
-  rather than a detection — here are the ones a {{stack}} project usually needs."
+  rather than a detection — here are the ones a {{stack}} project often needs."
   Presenting the table and then finding nothing to match reads as a broken tool.
 - **Propose the domains the stack implies, label each as an assumption, and ask
   for confirmation.** A React Native project almost always wants `forms` and
-  `testing`; a project that genuinely has neither should say so, and that is
+  `testing`; a project that genuinely has neither says so, and that is
   worth knowing before the first feature is written.
 
   **Record which ones were confirmed, and which were declined.** A declined
@@ -239,7 +239,7 @@ Handle it honestly:
 script, the linter and the dependency health **from the manifest**. So on day
 one the domain selection is mostly a detection against the manifest rather than
 against the source tree — what is left genuinely undetectable is a short list,
-and it should be emitted as **assumptions**, not offered as a menu.
+and it is emitted as **assumptions**, not offered as a menu.
 
 The rule to keep: **an assumption you do not get ratified is a decision you
 made silently.** Write it down as one, and the variance disappears with it.

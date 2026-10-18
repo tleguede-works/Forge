@@ -11,6 +11,7 @@ Language rule: repository files in English; deliverables in `.forge/` follow the
 - CLI also covers: check coverage, premises, plans; slice start and done with evidence; phase reopen (resets downstream reviews); client ask, list, resolve, sweep. Tested by tests/flow.sh.
 - Installer: scripts/install.py (auto-detects Claude Code and OpenCode, converts agent frontmatter, merges hooks into settings.json without touching foreign hooks, idempotent, --uninstall). install.sh tested on Linux.
 
+- forge-rules templates and references: the 120 soft-wording hits are rewritten; they are inside the lint scope now. Only `references/banned-wording.md` is exempt, by file name, because it lists the banned words.
 - Integrity: state.json is sealed; a hand edit is refused (R2). Approved deliverables that change afterwards are reported as DRIFT and block the next phase. tests/adversarial.sh covers 10 shortcut scenarios.
 
 - Escape-hatch audit done: docs/ESCAPE-HATCH-AUDIT.md (16 shortcuts closed by the CLI, 7 named as judgement). Migration notes: docs/MIGRATION-v2.md.
@@ -29,4 +30,4 @@ Language rule: repository files in English; deliverables in `.forge/` follow the
 - `npx skills add` layout: skills/ folders follow the standard layout, not yet tested with the tool.
 
 ## Pending
-- forge-rules backlog: the copied templates and references hold 120 soft-wording hits (should, may, usually, at least) in 73 files. They are excluded from the lint scope; emitted rule sets are audited by `forge rules audit`. Rewrite them to the strict vocabulary.
+Nothing on the build list. The items under "Written, not verified on a live tool" need a real Claude Code, OpenCode and Windows run.

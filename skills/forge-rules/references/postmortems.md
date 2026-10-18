@@ -23,7 +23,7 @@ Asked to consolidate an existing 18-file `.opencode/rules/` set. The agent runni
 
 1. **Only two content tiers existed ("cut prose" / "keep commands").** A sentence like *"Split by responsibility, not by lines — a 250-line single-responsibility file is fine"* is a real decision rule with no backtick command, so it got misclassified as prose and cut. → Fixed with the three-tier test in Principle 1 (tutorial / operational prose / verifiable command) and the "would the agent violate this?" test.
 2. **"Merge small files into neighbors" had no depth requirement.** Structurally the merges were correct (right neighbor, right domain) — the failure was invisible at the structural level and only showed up in content. → Fixed with the absorb/reference/delete distinction (Step 4) and mandatory Step 4b verification immediately after each merge.
-3. **The budget felt like a target.** Seeing 18 files / ~2,500 lines created pressure to compress toward the ~500-line-per-file ceiling, and that pressure landed on content, not on the tutorial-prose fat that should have absorbed it. → Fixed with Principle 5 ("ceilings, not targets") stated explicitly, in more than one place, so it survives skimming.
+3. **The budget felt like a target.** Seeing 18 files / ~2,500 lines created pressure to compress toward the ~500-line-per-file ceiling, and that pressure landed on content, not on the tutorial-prose fat that was meant to absorb it. → Fixed with Principle 5 ("ceilings, not targets") stated explicitly, in more than one place, so it survives skimming.
 4. **No comparison step existed between "before" and "after."** Nothing in the original workflow ever re-opened the source files after drafting the target and checked whether their rules had a home. → Fixed with Step 5b (content preservation audit) and the matching checklist section in `audit-checklist.md`, which requires a reconciliation count before delivery.
 5. **"Start from a skeleton" was applied to the wrong situation.** That principle is sound for a project with zero existing rules — it's actively harmful applied to consolidating a set where every existing rule already represents a lesson learned. → Fixed with the explicit fresh-vs-consolidation branch at the start of Step 4.
 
@@ -91,7 +91,7 @@ symbol from another codebase, and the sentence around it is correct.
 
 **The fix, now in the templates and the checklist:**
 
-1. **A generated rule file may never name its own source template or profile.**
+1. **A generated rule file never names its own source template or profile.**
    Not "per the profiles", not "as in the Flutter profile", not a symbol that only
    exists in the template the rule came from. The rule must stand alone or cite
    something the reader has.
@@ -106,7 +106,7 @@ symbol from another codebase, and the sentence around it is correct.
 
 **A reference to something the reader cannot reach is contamination even when
 every other word in the rule is correct** — and the contaminating word is
-usually an example, not the rule.
+most often an example, not the rule.
 
 ## Case 3 — A findings file that never changed any behaviour
 
@@ -166,7 +166,7 @@ a finding is a defect. Neither existed.
 ### Fix
 
 - **`domain/external-system-contracts.md` gained a mandatory —Promotion Rule.** An
-  entry that has become generally applicable must be promoted into the owning
+  entry that applies beyond its first case must be promoted into the owning
   domain rule file — restated as a plain rule with no archaeology — and the entry
   stays as its provenance. An entry that stays project-specific is *correct* where
   it is and is never promoted; the test is whether the statement is true beyond
@@ -176,7 +176,7 @@ a finding is a defect. Neither existed.
   wrong.
 - **`audit-checklist.md` gained a —Promotion section**, checked in both
   directions: no rule contradicted by a finding, and no finding that has been
-  generally true for several sessions without reaching a rule file.
+  true for several sessions without reaching a rule file.
 
 ### The one-line takeaway
 
@@ -301,11 +301,11 @@ directory.
   same thing**, called out explicitly as the defect most likely to survive every
   other check; and a check that assertions in the project's own documentation
   are verified rather than inherited.
-- **A template may not assert a countable fact about a tool-generated file.** The
+- **A template never asserts a countable fact about a tool-generated file.** The
   same source documented its lint configuration as "strict 44-rule" when the file
   listed 34 — a number that drifts on the next dependency bump and is false the
   moment it's written. Rule files cite rule *names*, never counts.
-- **A template may not carry a claim that isn't true of the template.** A false
+- **A template never carries a claim that isn't true of the template.** A false
   statement in a reusable template is worse than no statement: it's copied into
   every future project, and it fails in all of them.
 

@@ -57,8 +57,8 @@ the project re-derived (`documentation-sources.md`).
   makes the whole tree client-rendered.
 - **A client boundary is a real cost**: its subtree ships JavaScript. Make it
   the smallest thing that needs interactivity.
-- **Server and client components compose in one tree** — a server component may
-  render a client component and pass it serialisable props. It may not pass a
+- **Server and client components compose in one tree** — a server component can
+  render a client component and pass it serialisable props. It cannot pass a
   function, a class instance, or a non-serialisable value across the boundary.
 
 ## Composition

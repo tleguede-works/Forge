@@ -67,7 +67,7 @@ expressions below are per input model.
 - Every interactive element is reachable in a logical tab order, and activates
   with the platform's activation keys.
 - **Focus is always visible.** Never remove the focus indicator without replacing
-  it with something at least as visible.
+  it with something equally visible.
 - **A custom interactive element handles keyboard events explicitly** — a
   `{{div}}` with a click handler is not a button.
 - **Overlays trap focus while open and return it to the trigger on close.**

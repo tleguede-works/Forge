@@ -27,7 +27,7 @@ rule set ends up internally consistent, wired to nothing, and complete on paper.
 | `no_contradictory_thresholds` | Two files giving two answers to "is this file too big" |
 | `no_forge_coupling` | Rule text that depends on the Forge tool or its `.forge/` folder |
 | `no_cross_project_contamination` | A library, file or symbol from another project |
-| `no_unenforceable_prose` | "Properly", "as needed", "probably X, but verify" |
+| `no_unenforceable_prose` | A word from `references/banned-wording.md`, or a guess followed by a request to verify |
 | `gates_are_commands` | A gate set with no duplication, coverage, vulnerability or review check |
 | `budget_measured` | The total of a glob-loaded rules directory, and per-file overages |
 
@@ -49,7 +49,7 @@ not report them as verified when they were not.
       refactor.
 - [ ] Any two files mentioning the same library — do they agree on the version and
       on the banned patterns? A gap isn't a contradiction yet, but it's a gap.
-- [ ] Any small file closely related to another small file — should they merge?
+- [ ] Any small file closely related to another small file — merge them unless each owns a distinct scope
       **If yes, it's an absorb, and Step 4's verification runs immediately.**
 - [ ] **No rule appears in both a domain file and the entry file.** The entry
       file carries the index and the summary, not the domain rules.
@@ -90,8 +90,7 @@ not report them as verified when they were not.
 
 ## Vagueness — the "gets silently ignored" check
 
-- [ ] Any sentence using "carefully", "properly", "gracefully", "where
-      appropriate", "as needed", "clean", "robust" without an attached command or
+- [ ] Any sentence using a word from `references/banned-wording.md` without an attached command or
       concrete trigger? Rewrite or cut.
 - [ ] Any style rule with no verification command next to it? Attach the lint
       rule, or cut it — an unverifiable style preference is a suggestion and will
@@ -241,7 +240,7 @@ doesn't belong.
       A discovery sitting next to a rule it invalidates has changed nothing, and
       the next session reads the rule, misses the contradiction, and repeats the
       bug.
-- [ ] No entry that has been generally true for several sessions is still only an
+- [ ] No entry that has held true for several sessions is still only an
       entry. A finding that never reaches a rule file is a diary entry.
 - [ ] Entries record **behaviour, not workarounds** — so a change in the external
       system tells a future session what to re-check, rather than making the

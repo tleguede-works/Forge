@@ -42,7 +42,7 @@ Before writing any code that touches an Expo, EAS, or React Native API:
    don't have.
 4. **When a rule here or in another file names a specific API, re-verify it
    against the installed version** before relying on it. A row marked
-   `{{version: re-verify}}` was true for the version audited and may not be for
+   `{{version: re-verify}}` was true for the version audited and can be false for
    the next one.
 
 **A note in a rule file is a hypothesis about a version, not a guarantee.** When
@@ -139,7 +139,7 @@ work around it silently.
 ## Keyboard & Input
 
 - **Keyboard avoidance is explicit, and both platforms are configured.** The
-  default of "undefined" is a no-op on at least one platform.
+  default of "undefined" is a no-op on one or more platforms.
   - iOS: the container's avoidance behaviour, plus the platform's automatic
     inset adjustment where available.
   - Android: the container's avoidance behaviour **plus** an explicit
@@ -153,8 +153,8 @@ work around it silently.
   submits. For irreversible actions, an explicit submit control remains
   mandatory (`accessibility.md` §Keyboard Operation).
 - {{If the project later adds a keyboard-aware scroll container, the manual
-  per-field scroll handling above is replaced by it, and this section should be
-  updated in the same change. A rule that describes a workaround for a
+  per-field scroll handling above is replaced by it, and this section is
+updated in the same change. A rule that describes a workaround for a
   dependency the project no longer has is a trap.}}
 
 ## Safe Areas & Insets

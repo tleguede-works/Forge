@@ -23,7 +23,7 @@ routing overlay), state rules here (that is data-and-state.md), or style here
 ## Folder Layout
 
 <!-- Emit the stack's real tree. The slots below are the required slots; a stack
-     may add more but must be able to say where each slot lives. Annotate each
+     can add more but must be able to say where each slot lives. Annotate each
      entry with what belongs there AND what does not — the negative is the part
      that stops drift. -->
 
@@ -45,9 +45,9 @@ The rule, and its enforcement:
 - **{{innermost layer}}** imports nothing from the framework, the network, the
   platform, or any UI package. It is pure logic and data shapes.
   - Verify: `{{grep}}` returns empty.
-- **{{middle layer}}** may depend on the innermost layer. It must not depend on
+- **{{middle layer}}** can depend on the innermost layer. It must not depend on
   the outer layer.
-- **{{outer layer}}** may depend on both. Nothing depends on the outer layer.
+- **{{outer layer}}** can depend on both. Nothing depends on the outer layer.
 - **{{cross-cutting layer}}** depends on nothing inside `{{features}}`.
 - **No cycles** between {{features}}. {{Verify: `{{tool that catches cycles}}`.}}
 
@@ -122,7 +122,7 @@ big.**
 **Split by responsibility, not by lines.** A 250-line file with ONE
 responsibility is fine. Five small files with tangled concerns is not.
 
-The deciding question: **"If I change X, should Y also need to change?"** If no
+The deciding question: **"If I change X, does Y also need to change?"** If no
 → split.
 
 **Signs a file needs splitting**

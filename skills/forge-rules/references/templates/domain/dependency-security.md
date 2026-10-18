@@ -93,7 +93,7 @@ Detection without this section produces a finding nobody acts on
    behaviour, it belongs in `external-system-contracts.md`.
 
 **`npm audit fix --force` and the equivalents are not remediation.** They
-upgrade across majors with no review, and the "fix" is usually a broken
+upgrade across majors with no review, and the "fix" is often a broken
 build discovered three days later, after the change was merged.
 
 ## When a Fix Is Not Available

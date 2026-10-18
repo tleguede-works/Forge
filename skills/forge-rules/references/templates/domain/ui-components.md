@@ -143,7 +143,7 @@ placement table above.
 
 - **If a UI need has no primitive and no reasonable built-in: check the
   versioned documentation before inventing a custom implementation.** An
-  official extension is usually better than a hand-rolled native view.
+  official extension is often better than a hand-rolled native view.
 - **If a visual specification contradicts a token rule or an accessibility
   rule** — a contrast requirement, a touch-target minimum: **flag it in your
   reply rather than silently overriding the rule.** The design and the rule both

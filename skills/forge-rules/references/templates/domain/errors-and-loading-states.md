@@ -71,7 +71,7 @@ An error-handling change is complete when **ALL** of:
 3. **Empty** — a distinct state from both loading and error, with an icon, a
    message, and an action where one applies. **An empty result is not a success
    screen showing nothing**, and it is never the previous results left on screen.
-4. **Success** — the data, which may itself be an empty collection (see 3).
+4. **Success** — the data, which can itself be an empty collection (see 3).
 
 - **Use shared state components.** Do not hand-write the three-way branch in
   every screen — one `{{LoadingState}}` / `{{ErrorState}}` / `{{EmptyState}}`
@@ -127,10 +127,10 @@ An error-handling change is complete when **ALL** of:
   loading state}}.
 - **Rely on an inherited boundary when the handling genuinely applies.** Don't
   duplicate identical boilerplate at every level — duplication is how they drift.
-- **A not-found state for any dynamic identifier that might not resolve.** An
+- **A not-found state for any dynamic identifier that can fail to resolve.** An
   invalid or unknown id renders the empty state, not a crash and not a blank
   screen.
-- **A render-time boundary is the only place a raw render error may surface.**
+- **A render-time boundary is the only place a raw render error surfaces.**
   Recoverable UI beats a blank screen.
 - **A loading boundary only where the wait is genuinely long enough to warrant
   one** — not for content that arrives immediately.

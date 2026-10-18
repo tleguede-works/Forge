@@ -88,7 +88,7 @@ consistently wrong.**
   full-resolution asset costs bandwidth, decode time, and memory, and it is the
   most common performance defect in image-heavy apps.
 - **Use the platform's image component**, which handles resizing, caching, and
-  progressive loading. A bare image element from the base framework usually does
+  progressive loading. A bare image element from the base framework often does
   none of it.
 - **Set a sensible cache policy and leave it alone.** Don't disable caching to
   fix a one-off — that trades a small stale-image risk for a permanent cost on
@@ -127,7 +127,7 @@ consistently wrong.**
 - **Memoize genuinely expensive computation** — a derived collection over a
   large array, a sort, a parse. **Not reflexively on every value.** Memoization
   has a real cost: memory, comparison, and complexity.
-- **Every hand-added memoization should be justified by a measurement.** If the
+- **Every hand-added memoization must be justified by a measurement.** If the
   framework already memoizes automatically, adding it by hand is noise at best
   and a source of stale-value bugs at worst.
 - **When hand-added memoization and a compiler disagree, trust the
@@ -160,7 +160,7 @@ consistently wrong.**
 - **Splitting is per-feature, not per-screen.** The bundle is resolved at build
   time; what you are actually deferring is initialisation, not download.
 - **Route code is already split by the platform's route system.** Adding a
-  manual dynamic import on top usually duplicates it.
+  manual dynamic import on top often duplicates it.
 
 ## Budgets
 

@@ -5,7 +5,7 @@ GENERATOR NOTES — delete this block in the emitted file.
 
 Status: source-audited. Synthesised from two real projects (a Next.js SPA and an
 Expo React Native app) plus the generic-type rules of a third. Rows marked
-`source:` were present in at least one audited project; rows marked `doc:` come
+`source:` were present in one or more audited projects; rows marked `doc:` come
 from framework documentation.
 
 Emit this overlay together with `core/coding-standards.md`. It supplies the
@@ -104,18 +104,18 @@ this file wins; where they overlap on a rule, `coding-standards.md` wins.
 
 <!-- The rows that cost the most time when unknown. -->
 
-- **A test runner configured for an ESM project may need its own config file in
+- **A test runner configured for an ESM project can need its own config file in
   CommonJS** even when the project is ESM, depending on the runner's preset.
   {{doc: a `"type": "module"` manifest plus a framework-provided test preset can
   require the runner's own config to stay CJS, because the runner loads the
   config before the project's module type is in effect.}}
-- **A DOM-based component test environment may need explicit polyfills** for
+- **A DOM-based component test environment can need explicit polyfills** for
   browser APIs the framework's components touch — {{e.g. `ResizeObserver`,
   `IntersectionObserver`, `matchMedia`}} — or those components silently fail to
   render in tests. {{doc: documented in the test-environment's own setup guides;
   the symptom is an overlay that never appears and a test that passes for the
   wrong reason.}}
-- **Confirm the runner, not the default.** The project may have configured a
+- **Confirm the runner, not the default.** The project can have configured a
   different one (`testing.md`).
 
 ## Banned Patterns

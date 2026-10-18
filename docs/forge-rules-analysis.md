@@ -1,7 +1,5 @@
 # Forge Rules: analysis of Project Rules Architect and what changed
 
-<!-- lint:ignore-file -->
-
 ## Weaknesses found in Project Rules Architect
 
 | # | Weakness | Evidence | Fix in forge-rules |
@@ -17,6 +15,7 @@
 | 9 | Memory scaffold lived in two systems | A "context scaffold" mode and four memory templates duplicated `forge-memory` | Scaffold mode and templates removed; templates use neutral names (the decisions log, the session journal, the lessons log) |
 | 10 | Provenance loaded by accident | 441-line provenance file sat in `references/` | Moved to `docs/forge-rules/provenance.md`, outside the skill folder |
 | 11 | Command in a code span escaped the clarity check | `stripCodeSpans` ran on every check | The coupling check now inspects code spans; the clarity check still strips them |
+| 13 | 120 soft-wording hits in templates and references | should, may, usually, at least and similar | Rewritten; the wording lint now covers `forge-rules/references/`; banned words are listed once in `references/banned-wording.md` |
 | 12 | Sentence-level escape hatch | "If the user says just generate something reasonable, don't force the interview" | Kept only for the interview; F1 to F10 apply in full |
 
 ## Known limits of the audit

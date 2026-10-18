@@ -206,8 +206,8 @@ Pick per grep, and write the choice down:
 
 | Situation | Form |
 |---|---|
-| The rule is "never do X" and X may appear in a comment explaining it | `{{grep-with-comment-filter}}` |
-| The rule is "never do X", full stop, and no comment should mention it either | `{{grep}}` with a one-line note that the comment is also forbidden |
+| The rule is "never do X" and X can appear in a comment explaining it | `{{grep-with-comment-filter}}` |
+| The rule is "never do X", full stop, and no comment mentions it either | `{{grep}}` with a one-line note that the comment is also forbidden |
 | The rule is "X appears exactly once" | `{{grep-with-count}}` — returns one path per occurrence, so a second copy is visible |
 
 **Also check the regex dialect, not the intent.** A pattern written with `-E` and
@@ -353,8 +353,8 @@ regenerates from git, a synthesis does not.
 - A correction in `{{LEARNINGS}}` that keeps recurring gets **promoted into the
   matching rule file**, and the rule file's provenance points back at the
   correction.
-- A finding in `{{external-system-contracts}}` that has become generally
-  applicable gets **promoted into the owning domain rule file**. A finding that
+- A finding in `{{external-system-contracts}}` that applies beyond its
+first case gets **promoted into the owning domain rule file**. A finding that
   never reaches a rule file has changed nothing.
 
 > **A correction without a domain is incomplete.** The domain is the promotion

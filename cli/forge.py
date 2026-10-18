@@ -23,11 +23,11 @@ REVIEWERS = ("qa", "redteam")
 TOUCHPOINTS = ("bootstrap", "prd", "design", "validation")  # client-mode phases that need the client
 BLOCKING = ("critical", "major")
 BEGIN, END = "<!-- forge:start v3 -->", "<!-- forge:end -->"
-BANNED = [r"if possible", r"ideally", r"preferably", r"generally", r"normally",
-          r"at a minimum", r"at least", r"\bshould\b", r"\bmay\b", r"\bmight\b",
-          r"try to", r"\bconsider\b", r"as appropriate", r"when appropriate",
-          r"feel free", r"\busually\b", r"where possible", r"as needed",
-          r"unless otherwise", r"depending on the case"]
+BANNED = [r"\bif possible\b", r"\bideally\b", r"\bpreferably\b", r"\bgenerally\b", r"\bnormally\b",
+          r"\bat a minimum\b", r"\bat least\b", r"\bshould\b", r"\bmay\b", r"\bmight\b",
+          r"\btry to\b", r"\bconsider\b", r"\bas appropriate\b", r"\bwhen appropriate\b",
+          r"\bfeel free\b", r"\busually\b", r"\bwhere possible\b", r"\bwhenever possible\b", r"\bwherever possible\b", r"\bas needed\b",
+          r"\bunless otherwise\b", r"\bdepending on the case\b"]
 
 
 def die(msg, code=1):
@@ -1009,8 +1009,8 @@ def cmd_lint(a):
         files += [p] if p.is_file() else sorted(p.rglob("*.md"))
     for f in files:
         txt = f.read_text(encoding="utf-8")
-        if "lint:ignore-file" in txt:
-            continue
+        if "lint:ignore-file" in txt and f.name == "banned-wording.md":
+            continue  # the only file allowed to quote banned words: its job is to list them
         for i, line in enumerate(txt.splitlines(), 1):
             m = pat.search(line)
             if m:

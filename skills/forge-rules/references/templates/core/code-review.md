@@ -33,7 +33,7 @@ that is independently revertible (`git-workflow.md` §Commits). Two unrelated
 changes in one diff is not two reviews, it is one unusable one: the reviewer
 either checks both shallowly or stops.
 
-- A reviewer **may not approve their own change.** This is the single rule
+- A reviewer **never approves their own change.** This is the single rule
   that makes the rest of this file meaningful, and it has no exception for
   "it was small".
 - A review that finds nothing states **what was checked**, not "LGTM".
@@ -116,7 +116,7 @@ same tone, and the second is dismissed with the first.
 |---|---|---|
 | **Blocking** | Wrong behaviour, a broken gate, a security hole, a rule contradiction | Not merged. Stated as **what** breaks, **why**, and a failing case |
 | **Required** | Not wrong today, but the thing that makes it wrong tomorrow — a missing test, an unexplained choice | Not merged until addressed or explicitly deferred |
-| **Suggestion** | A preference the author may decline | Non-blocking, clearly marked as optional |
+| **Suggestion** | A preference the author can decline | Non-blocking, clearly marked as optional |
 | **Question** | The reviewer does not understand something | **A question, not a comment.** The author answers; if the answer is "I don't know either", that is itself a **Required** |
 
 A **Blocking** comment without a **failing scenario** is a guess wearing a
@@ -126,7 +126,7 @@ fragile" is a veto the author cannot act on.
 ## Tests: reviewed as code
 
 **A test is reviewed as production code** — it is read by the next person, it
-fails in the worst moment, and it is usually the least reviewed file in a diff.
+fails in the worst moment, and it is often the least reviewed file in a diff.
 
 - Does a test **fail against the broken behaviour**? A test that cannot fail
   is not a test; confirm it by breaking the code and watching it go red.

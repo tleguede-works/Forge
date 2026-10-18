@@ -46,7 +46,7 @@ flutter gen-l10n                   # regenerate localizations
   defaults, plus:
   - single quotes for strings
   - trailing commas
-  - `const` constructors and declarations wherever possible
+  - `const` constructors and declarations on every model and widget that can be const
   - **no `print`** — `avoid_print`; use the project's logger
   - **no `dynamic` calls** — `avoid_dynamic_calls`; type the value
   - explicit return types
@@ -77,8 +77,8 @@ flutter gen-l10n                   # regenerate localizations
 
 ## Models (no code generation)
 
-- **`const` constructor whenever possible** — a model that can be const should
-  be, and const models are compared by identity for free.
+- **`const` constructor on every model that can be const** — such a model is
+  const, and const models are compared by identity for free.
 - **Override `==` and `hashCode`** — using the framework's helper, not a
   hand-rolled chain. A model in a set or a map key without this silently
   misbehaves.
@@ -210,7 +210,7 @@ into `{{output dir}}`, configured by `l10n.yaml`.
 <!-- Language-and-framework traps that produce real defects. Each one names the
      check that catches it — a footgun with no command is a preference. -->
 
-- **`List.sort` is not stable in Dart.** Two elements comparing equal may come
+- **`List.sort` is not stable in Dart.** Two elements comparing equal can come
   back in either order, so a screen's row order can change between two identical
   runs, and a list of same-day entries has no defined order. **Every sort that
   feeds a user-visible list needs a total order: a tiebreaker on a unique key

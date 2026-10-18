@@ -81,7 +81,7 @@ the same project.
 |---|---|---|
 | No source files | `greenfield` | All gates apply from the first line. No exemptions |
 | Source files, **every** measured gate green | `greenfield` | Same. The project is already at the threshold |
-| Source files, **at least one** gate red | `ratchet` | The existing value is recorded, and **regression** is what fails |
+| Source files, **one or more** gates red | `ratchet` | The existing value is recorded, and **regression** is what fails |
 | `greenfield`, and a gate's tool is missing | `greenfield-dette` | The gate is emitted with status `absent` and the install command |
 
 ### Why the ratchet mode is not a concession
@@ -99,7 +99,7 @@ So the ratchet mode keeps the *property* and drops the *immediacy*:
   provide (`--baseline-from-ref`, `--fail-on-new-clones`).
 - The debt has a **route**: which file, what effort, what removal condition.
 
-This is the difference between "the project may be at 22 %" and "the project is
+This is the difference between "the project is probably near 22 %" and "the project is
 at 22 %, and here is what lowers it". Only the second one changes behaviour.
 
 ## The report

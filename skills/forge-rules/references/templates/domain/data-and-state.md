@@ -129,7 +129,7 @@ mutation.**
 
 - correctness matters more than instant feedback
 - the operation has real consequences — a payment, a submission, anything the
-  backend may reject for a business reason
+  backend can reject for a business reason
 - a rollback would confuse the user
 
 Await the server; on success invalidate the affected queries; show a pending
@@ -148,7 +148,7 @@ error, revalidate when settled.
 > **If genuinely unsure which fits: default to wait-for-response.** It is the
 > safer failure mode — a slightly slower UI is a smaller problem than a
 > confidently wrong one. Log the choice in the decisions log if it is significant
-> enough that a future session might second-guess it.
+> enough that a future session second-guesses it.
 
 **Rules that apply to both**
 

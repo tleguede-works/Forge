@@ -11,7 +11,7 @@ files that **no tool reads**: correct, well-organised, entirely inert.
 
 The concrete case: a project configured for OpenCode needs an `opencode.json`
 whose `instructions` key points at the instruction file *and* the rules
-directory. Without that file, `AGENTS.md` may still be discovered, and the entire
+directory. Without that file, `AGENTS.md` can still be discovered, and the entire
 rules directory is silently ignored — so a full rule set that never loads. The
 audited source project in this library's own history had exactly that file, and
 one of the two retired profiles shipped **no wiring file at all**.
@@ -180,7 +180,7 @@ described below.
 parallel copy is the exact failure the multi-target row exists to prevent: two
 instruction sets that drift until they contradict.
 
-**An existing `CLAUDE.md` is not overwritten.** It may already hold real content —
+**An existing `CLAUDE.md` is not overwritten.** It can already hold real content —
 hooks, subagents, project-specific commands. Merge the pointer into it.
 
 ### Multiple tools
@@ -195,7 +195,7 @@ a mirror with cross-references is the goal.
 
 ## Choosing the target
 
-**Ask, unless the answer is already visible.** The project usually tells you:
+**Ask, unless the answer is already visible.** The project often tells you:
 an existing `opencode.json` means OpenCode, an existing `.cursor/` means Cursor,
 and so on. When nothing exists, ask — this is a genuine question with a
 different deliverable each way, and it is the one question in the interview that
@@ -226,7 +226,7 @@ The wiring is per service, not only at the root:
 Each service's config points at **its own** rules directory, and at the
 `AGENTS.md` in its own directory. The root's `instructions` covers the root's
 `AGENTS.md`; it does not reach into service directories unless its glob says so,
-and it should not — the service files carry the deltas
+and it does not — the service files carry the deltas
 (`stack-detection.md` §Monorepos).
 
 ## Verification
