@@ -30,4 +30,4 @@ Language rule: repository files in English; deliverables in `.forge/` follow the
 - `npx skills add` layout: skills/ folders follow the standard layout, not yet tested with the tool.
 
 ## Pending
-Nothing on the build list. The items under "Written, not verified on a live tool" need a real Claude Code, OpenCode and Windows run.
+Nothing on the build list. Improvements under study: see `docs/IMPROVEMENTS.md` (I-001: mandatory verification before every commit). The items under "Written, not verified on a live tool" need a real Claude Code, OpenCode and Windows run.

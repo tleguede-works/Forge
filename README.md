@@ -2,7 +2,7 @@
 
 Gated, CLI-enforced workflow that turns an idea into a verified, code-ready plan. Works with Claude Code and OpenCode.
 
-Status: **v3 rebuild in progress.** See `docs/STATUS.md` for what exists and what is pending.
+Status: **v3 rebuild in progress.** See `docs/STATUS.md` for what exists and what is pending, and `docs/IMPROVEMENTS.md` for the improvements under study.
 
 ## Layout
 
