@@ -63,8 +63,8 @@ for p in ["bootstrap","landscape","prd","roadmap","design","architecture","plans
 s["phases"]["build"]="in_progress"; s["phase"]["current"]="build"; forge.save(R,s)
 P
 ok $F slice start S01
-fail $F slice done S01 --evidence x
-ok $F slice done S01 --evidence "pytest tests/test_pay.py: 4 passed"
+fail $F slice done S01 --evidence "tests pass"
+ok $F slice done S01 --evidence "pytest tests/test_pay.py : 4 passed"
 ok $F gate check
 ok $F phase reopen prd --reason "client added refunds, B2 changed"
 fail $F phase reopen prd --reason "again twice"                             # already in progress
@@ -74,4 +74,9 @@ fail $F client ask --what "Pick payment provider"
 ok $F client ask --what "Pick payment provider" --price "49 EUR/month" --by 2020-01-01 --if-no-answer "use Stripe"
 ok $F client list; ok $F client sweep
 fail $F client resolve --id 1 --answer x                                    # already decided by default
+ok $F client ask --what "Choose a logo" --price "free" --by 2099-01-01 --if-no-answer "keep the draft"
+out=$($F client report) || { echo "FAIL: client report"; exit 1; }
+echo "$out" | grep -q "points waiting for the client: 1" || { echo "FAIL: report misses the pending point"; exit 1; }
+echo "$out" | grep -q "decided by default (must be reported): 1" || { echo "FAIL: report misses the default decision"; exit 1; }
+out2=$($F client report); echo "$out2" | grep -q "decided by default (must be reported): 0" || { echo "FAIL: default decision reported twice"; exit 1; }
 echo "FLOW PASS"

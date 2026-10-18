@@ -37,7 +37,9 @@ Read the mode in `forge status`.
 
 In client mode, record every question that needs the client with `forge client ask --what ... --price ... --by YYYY-MM-DD --if-no-answer ...` (all four are required). Run `forge client sweep` at each progress report: overdue points take their stated default and you report them.
 
-Switch with `forge mode interactive|client`. Mode changes how you talk, never which checks run.
+Switch with `forge mode interactive|client --evidence "<the user's words>"`. Only the user changes the mode; you never switch it to gain `auto` approvals.
+
+At each phase end in client mode, run `forge client report`, write the client-facing report in the project language from its facts, and run the `forge-client-liaison` agent on it. Mode changes how you talk, never which checks run.
 
 ## Phase procedure
 
@@ -53,4 +55,4 @@ For the current phase:
 
 ## Reports
 
-A review report is a JSON file: `{"findings":[{"id","severity","status","evidence","reason?"}]}`. Severity is `critical`, `major` or `minor`. Status is `open`, `resolved` or `dismissed`. A dismissed finding needs a `reason`, and you record that reason with `forge memory decide`.
+A review report is a JSON file that the reviewing agent writes at `.forge/reviews/<name>.<agent>.json` (the `:` in `screen:<id>` becomes `_`). The CLI accepts that path only, and a gate fails if the report changes after it was recorded. The file shape is: `{"findings":[{"id","severity","status","evidence","reason?"}]}`. Severity is `critical`, `major` or `minor`. Status is `open`, `resolved` or `dismissed`. A dismissed finding carries a `reason` that is the ID of a decision recorded first with `forge memory decide` (for example `D-003`). The CLI refuses any other reason.

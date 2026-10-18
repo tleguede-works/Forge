@@ -13,6 +13,10 @@ Language rule: repository files in English; deliverables in `.forge/` follow the
 
 - Integrity: state.json is sealed; a hand edit is refused (R2). Approved deliverables that change afterwards are reported as DRIFT and block the next phase. tests/adversarial.sh covers 10 shortcut scenarios.
 
+- Escape-hatch audit done: docs/ESCAPE-HATCH-AUDIT.md (16 shortcuts closed by the CLI, 7 named as judgement). Migration notes: docs/MIGRATION-v2.md.
+- Kit integrity (`forge kit verify`, manifest written by the installer) and `forge client report` are in and tested (tests/install.sh, tests/flow.sh).
+- Reviewer reports are bound to a fixed path and hash; dismissed findings must cite a recorded decision.
+
 ## Known limits (judgment, not mechanical)
 - A reviewer report is a JSON file written by an agent; the CLI validates its shape and binds it to the deliverable hash but cannot prove a separate agent wrote it.
 - `--evidence` text for approvals is recorded in the journal; the CLI cannot prove it quotes the user.
@@ -26,7 +30,3 @@ Language rule: repository files in English; deliverables in `.forge/` follow the
 
 ## Pending
 - forge-rules backlog: the copied templates and references hold 120 soft-wording hits (should, may, usually, at least) in 73 files. They are excluded from the lint scope; emitted rule sets are audited by `forge rules audit`. Rewrite them to the strict vocabulary.
-- forge-rules: `templates/core/entry-file.md` still offers a choice between a separate learnings file and an in-entry section; point it at the lessons log.
-- CLI: kit verify, a command that renders the client progress report.
-- Escape-hatch audit by Red Team on all normative files, and scenario tests (manifest section 6.2).
-- Migration notes from Forge v2 and the Project Rules Architect template library (forge-rules).

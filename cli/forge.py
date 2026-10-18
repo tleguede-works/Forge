@@ -151,6 +151,9 @@ def drift(r, s):
 
 def cmd_status(a):
     r = need_root(); s = load(r)
+    kp = kit_problems()
+    if kp:
+        print("KIT MODIFIED: " + "; ".join(kp[:5]) + ". Reinstall Forge before approving anything")
     for x in drift(r, s):
         print(f"DRIFT: {x}. Run `forge phase reopen {s['deliverables'][x.split(':')[0]]['phase']} --reason ...` or restore the file")
     cur = s["phase"]["current"]
@@ -178,8 +181,10 @@ def next_action(s):
 
 def cmd_mode(a):
     r = need_root(); s = load(r)
+    if len((a.evidence or "").strip()) < 3:
+        die("changing the mode needs --evidence with the user's own words asking for it")
     s["mode"] = a.value; save(r, s)
-    journal(r, "mode", a.value); print("mode =", a.value)
+    journal(r, "mode", f"{a.value} evidence={a.evidence!r}"); print("mode =", a.value)
 
 
 def cmd_phase_start(a):
@@ -229,7 +234,10 @@ def cmd_review(a):
     d = s["deliverables"].get(a.name) or die(f"'{a.name}' is not registered")
     if sha(r / d["path"]) != d["hash"]:
         die("stale: the file changed since registration; run `forge register` again")
-    rep = json.loads(Path(a.report).read_text(encoding="utf-8"))
+    exp = r / ".forge" / "reviews" / (a.name.replace(":", "_") + "." + a.agent + ".json")
+    if Path(a.report).resolve() != exp.resolve() or not exp.is_file():
+        die(f"the report must be the file {exp.relative_to(r)} written by the reviewing agent")
+    rep = json.loads(exp.read_text(encoding="utf-8"))
     findings = rep.get("findings")
     if not isinstance(findings, list):
         die("report needs a 'findings' list")
@@ -242,13 +250,15 @@ def cmd_review(a):
             die(f"bad severity in {f['id']}")
         if f["status"] not in ("open", "resolved", "dismissed"):
             die(f"bad status in {f['id']}")
-        if f["status"] == "dismissed" and not f.get("reason"):
-            die(f"{f['id']}: dismissed requires a reason")
+        if f["status"] == "dismissed":
+            m = re.search(r"\bD-\d+\b", f.get("reason", ""))
+            if not m or f"## {m.group(0)} " not in mem(r, "decisions.md").read_text(encoding="utf-8"):
+                die(f"{f['id']}: a dismissed finding must cite a recorded decision (reason 'D-<n>' created with forge memory decide)")
         if f["status"] == "open" and f["severity"] in BLOCKING:
             blocking += 1
     verdict = "ok" if blocking == 0 else "blocked"
-    d["reviews"][a.agent] = {"hash": d["hash"], "verdict": verdict,
-                             "findings": len(findings), "blocking": blocking}
+    d["reviews"][a.agent] = {"hash": d["hash"], "verdict": verdict, "findings": len(findings),
+                             "blocking": blocking, "report": str(exp.relative_to(r)), "report_hash": sha(exp)}
     save(r, s); journal(r, "review", f"{a.name} {a.agent} {verdict} blocking={blocking}")
     print(f"{a.agent} review of {a.name}: {verdict} (blocking={blocking})")
     sys.exit(0 if verdict == "ok" else 1)
@@ -292,6 +302,8 @@ def gate_problems(r, s, ph):
                 out.append(f"{n}: no {ag} review")
             elif rv["hash"] != d["hash"]:
                 out.append(f"{n}: {ag} review is for an older version")
+            elif not (r / rv["report"]).is_file() or sha(r / rv["report"]) != rv["report_hash"]:
+                out.append(f"{n}: {ag} report file is missing or was changed after it was recorded")
             elif rv["verdict"] != "ok":
                 out.append(f"{n}: {ag} review has {rv['blocking']} blocking finding(s)")
     return out
@@ -309,6 +321,9 @@ def cmd_gate(a):
         print(f"GATE {ph}: all mechanical checks pass; user approval still required"); return
     if not a.evidence or len(a.evidence.strip()) < 2:
         die("approve needs --evidence with the user's own approval words")
+    kp = kit_problems()
+    if kp:
+        die("the installed Forge kit was modified (" + "; ".join(kp[:3]) + "); reinstall before approving")
     if a.evidence.strip().lower() == "auto":
         if s["mode"] != "client" or ph in TOUCHPOINTS:
             die(f"auto approval is allowed only in client mode, outside the touchpoint phases {TOUCHPOINTS}")
@@ -610,8 +625,8 @@ def cmd_slice(a):
     else:
         if st != "in_progress":
             die(f"{a.id} is {st}")
-        if not a.evidence or len(a.evidence.strip()) < 8:
-            die("done needs --evidence: the test command and its result")
+        if not re.match(r"^.{3,}\s:\s.{3,}$", (a.evidence or "").strip()):
+            die("done needs --evidence shaped '<test command> : <result>'")
         sl[a.id] = "done"
         save(r, s); journal(r, "slice_done", f"{a.id} evidence={a.evidence!r}")
         write_now(r, f"{a.id} done", "start the next slice or run forge gate check", [], "")
@@ -666,6 +681,8 @@ def cmd_client(a):
             die("--answer is required")
         cl["pending"].remove(p); cl["decided"].append({**p, "answer": a.answer, "by_default": False})
         save(r, s); journal(r, "client_resolve", f"#{p['id']} {a.answer}"); print("resolved")
+    elif a.action == "report":
+        cmd_client_report(r, s)
     elif a.action == "sweep":
         due = [p for p in cl["pending"] if p["by"] < today]
         for p in due:
@@ -904,6 +921,68 @@ def cmd_rules(a):
     sys.exit(1 if bad else 0)
 
 
+# ---------------------------------------------------------------- kit integrity, client report
+KITDIR = Path(__file__).resolve().parent.parent
+KIT_DIRS = ("cli", "hooks", "skills", "agents", "scripts")
+
+
+def kit_hashes(base):
+    out = {}
+    for d in KIT_DIRS:
+        for p in sorted((base / d).rglob("*")) if (base / d).is_dir() else []:
+            if p.is_file() and "__pycache__" not in p.parts:
+                out[str(p.relative_to(base)).replace("\\", "/")] = hashlib.sha256(p.read_bytes()).hexdigest()
+    return out
+
+
+def kit_problems():
+    m = KITDIR / "kit.sha256"
+    if not m.is_file():
+        return None
+    exp, now_ = json.loads(m.read_text(encoding="utf-8")), kit_hashes(KITDIR)
+    out = [f"{k}: modified" for k, v in exp.items() if k in now_ and now_[k] != v]
+    out += [f"{k}: missing" for k in exp if k not in now_]
+    out += [f"{k}: not part of the installed kit" for k in now_ if k not in exp]
+    return out
+
+
+def cmd_kit(a):
+    pr = kit_problems()
+    if pr is None:
+        print("kit: no kit.sha256 next to this CLI (running from a source checkout, not an installed kit)"); return
+    if pr:
+        print("KIT MODIFIED"); [print("  -", x) for x in pr[:20]]; sys.exit(1)
+    print("kit: every installed file matches the manifest")
+
+
+def cmd_client_report(r, s):
+    cl = s.setdefault("client", {"pending": [], "decided": []})
+    last = cl.get("last_report", "")
+    print(f"# Progress report data ({now()})\n")
+    print("Write the client-facing report in the project language from these facts, then run the forge-client-liaison agent on it.\n")
+    print(f"- project: {s['project']} | language: {s['lang']} | mode: {s['mode']}")
+    print("- phases: " + ", ".join(f"{p}={s['phases'][p]}" for p in PHASES))
+    appr = sorted(n for n, d in s["deliverables"].items() if s["phases"][d["phase"]] == "approved")
+    print(f"- approved deliverables: {', '.join(appr) or 'none'}")
+    print(f"- next action: {next_action(s)}")
+    dec = mem(r, "decisions.md").read_text(encoding="utf-8")
+    new = [b.split("\n", 1) for b in re.split(r"^## ", dec, flags=re.M)[1:]]
+    new = [(h, body.strip().split("\n")[0]) for h, body in new if (re.search(r"\((\d{4}-[^)]+)\)", h) or [None, ""])[1] > last]
+    print(f"- decisions taken for the client since the last report: {len(new)}")
+    for h, body in new:
+        print(f"    * {h.strip()}: {body}")
+    byd = [x for x in cl["decided"] if x.get("by_default") and x.get("resolved_in_report") is None]
+    print(f"- points decided by default (must be reported): {len(byd)}")
+    for x in byd:
+        print(f"    * #{x['id']} {x['what']} -> {x['answer']} (cost: {x['price']})")
+        x["resolved_in_report"] = now()
+    print(f"- points waiting for the client: {len(cl['pending'])}")
+    for x in cl["pending"]:
+        print(f"    * #{x['id']} {x['what']} | cost: {x['price']} | answer by {x['by']} | default: {x['if_no_answer']}")
+    cl["last_report"] = now()
+    save(r, s); journal(r, "client_report", "report data produced")
+
+
 # ---------------------------------------------------------------- hooks
 def cmd_hooks(a):
     r = need_root(); home = Path.home()
@@ -946,7 +1025,7 @@ def main():
     p = sub.add_parser("init"); p.add_argument("--name", required=True)
     p.add_argument("--lang", default="en"); p.add_argument("--path", default="."); p.set_defaults(f=cmd_init)
     sub.add_parser("status").set_defaults(f=cmd_status)
-    p = sub.add_parser("mode"); p.add_argument("value", choices=["interactive", "client"]); p.set_defaults(f=cmd_mode)
+    p = sub.add_parser("mode"); p.add_argument("value", choices=["interactive", "client"]); p.add_argument("--evidence", default=""); p.set_defaults(f=cmd_mode)
     p = sub.add_parser("phase"); ps = p.add_subparsers(dest="sub", required=True)
     q = ps.add_parser("start"); q.add_argument("phase", choices=PHASES); q.set_defaults(f=cmd_phase_start)
     q = ps.add_parser("reopen"); q.add_argument("phase", choices=PHASES); q.add_argument("--reason", default=""); q.set_defaults(f=cmd_reopen)
@@ -964,13 +1043,14 @@ def main():
     p = sub.add_parser("check"); p.add_argument("what", choices=["coverage", "premises", "plans"]); p.set_defaults(f=cmd_check)
     p = sub.add_parser("slice"); p.add_argument("action", choices=["start", "done"]); p.add_argument("id")
     p.add_argument("--evidence", default=""); p.set_defaults(f=cmd_slice)
-    p = sub.add_parser("client"); p.add_argument("action", choices=["ask", "list", "resolve", "sweep"])
+    p = sub.add_parser("client"); p.add_argument("action", choices=["ask", "list", "resolve", "sweep", "report"])
     p.add_argument("--kind", default="decision", choices=["decision", "deviation"]); p.add_argument("--what", default="")
     p.add_argument("--price", default=""); p.add_argument("--by", default=""); p.add_argument("--if-no-answer", dest="if_no_answer", default="")
     p.add_argument("--id", type=int, default=0); p.add_argument("--answer", default=""); p.set_defaults(f=cmd_client)
     p = sub.add_parser("rules"); p.add_argument("action", choices=["audit"]); p.add_argument("path", nargs="?", default=".")
     p.add_argument("--target", default="opencode", choices=["opencode", "claude", "agents"])
     p.add_argument("--budget", type=int, default=800); p.add_argument("--json", action="store_true"); p.set_defaults(f=cmd_rules)
+    p = sub.add_parser("kit"); p.add_argument("action", choices=["verify"]); p.set_defaults(f=cmd_kit)
     p = sub.add_parser("hooks"); p.add_argument("action", choices=["status"]); p.set_defaults(f=cmd_hooks)
     p = sub.add_parser("lint-rules"); p.add_argument("paths", nargs="+"); p.set_defaults(f=cmd_lint)
     a = ap.parse_args()

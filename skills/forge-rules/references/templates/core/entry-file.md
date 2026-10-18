@@ -239,43 +239,19 @@ relevant one before working in that area, not all of them.
      file and nothing else. A file not listed here will never be read. A listed
      file that does not exist is a broken reference — check before delivering.
 
-     ⚠️ Emit ONE corrections store, not two. `architecture-decision-guide.md` §5
-     selects between a separate the lessons log and an in-entry `## Project
-     Learnings` section. Emitting both — as this template used to — produces an
-     entry file that says "no entries yet" in one place while the other holds
-     dozens, and the stale half is the one an agent is most likely to read. -->
+     The corrections store is the lessons log. Emit no second store inside the entry
+     file: two stores drift, and the stale one is the one an agent reads. -->
 
 ## Cross-Session Memory
 
-{{This project compensates for {{zero / limited}} cross-session memory with
-{{N}} files at the root, governed by `{{workflow rule file}}` §Memory File
-Triggers.}}
+{{This project compensates for {{zero / limited}} cross-session memory with the files below,
+governed by `{{workflow rule file}}` §Memory File Triggers.}}
 
-- **the session journal** — running record, session by session. Read in full at the
+- **the session journal**: running record, session by session. Read in full at the
   start of every session. Append an entry before ending any session or commit.
-  It opens with a {{project-specific runbook — which tool drives the admin, where
-  the credentials live and how to re-issue them}}; read that before any
-  {{external-system}} task.
-- **the decisions log** — project-wide ADRs. Closed entries are not to be
-  re-proposed or silently reversed. Check before any project-wide choice.
-{{#if separate-learnings-file}}
-- **the lessons log** — append-only corrections log. New rules are born here, from
-  a mistake made twice — not from speculation.
-
-  <!-- the lessons log entries name the rule file they will be promoted INTO.
-       A correction without a target has no promotion path, and a corrections
-       log with no promotion path is a diary that competes with the rules it was
-       meant to inform. Format, newest at top:
-
-       - YYYY-MM-DD [domain: <rule file>] <rule that broke> → <correction applied>
-  -->
-{{else}}
-- **Project Learnings** (this section) — corrections log. New rules are born here,
-  from a mistake made twice — not from speculation. Each entry names the rule
-  file it will be promoted into.
-
-  <!-- Newest at top. Format:
-       - YYYY-MM-DD [domain: <rule file>] <rule that broke> → <correction applied>
-  -->
-{{/if}}
-- (no entries yet — grows from real mistakes)
+- **the decisions log**: project-wide decisions. A closed entry is not re-proposed
+  or silently reversed. Check it before any project-wide choice.
+- **the lessons log**: corrections, append-only. A new rule is born here from a
+  mistake made twice, never from speculation. Each entry names the rule file it
+  will be promoted into; a correction without a target has no promotion path.
+  Format, newest at top: `YYYY-MM-DD [domain: <rule file>] <rule that broke> -> <correction applied>`

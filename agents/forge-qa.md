@@ -18,7 +18,7 @@ The delegation header, the deliverable, and the earlier approved deliverables it
 
 ## Output
 
-Write one file, `.forge/reviews/<deliverable>.qa.json`:
+Write one file, `.forge/reviews/<deliverable>.qa.json` (replace `:` with `_` in the deliverable name):
 
 ```
 {"findings":[{"id":"QA-1","severity":"critical|major|minor","status":"open","evidence":"<quote or location>","fix":"<what to add>"}]}

@@ -19,7 +19,7 @@ The delegation header, the deliverable, and the earlier approved deliverables. R
 
 ## Output
 
-Write one file, `.forge/reviews/<deliverable>.redteam.json`:
+Write one file, `.forge/reviews/<deliverable>.redteam.json` (replace `:` with `_` in the deliverable name):
 
 ```
 {"findings":[{"id":"RT-1","severity":"critical|major|minor","status":"open","evidence":"<quote and conflicting source>","fix":"<what must change>"}]}

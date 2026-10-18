@@ -88,6 +88,13 @@ def install(src, target):
     for d in ("cli", "hooks", "skills", "agents", "scripts"):
         shutil.rmtree(KIT / d, ignore_errors=True)
         shutil.copytree(src / d, KIT / d, ignore=shutil.ignore_patterns("__pycache__"))
+    import hashlib
+    man = {}
+    for d in ("cli", "hooks", "skills", "agents", "scripts"):
+        for p in sorted((KIT / d).rglob("*")):
+            if p.is_file() and "__pycache__" not in p.parts:
+                man[str(p.relative_to(KIT)).replace("\\", "/")] = hashlib.sha256(p.read_bytes()).hexdigest()
+    (KIT / "kit.sha256").write_text(json.dumps(man, indent=1), encoding="utf-8")
     cli = KIT / "cli" / "forge.py"
     cli.chmod(cli.stat().st_mode | stat.S_IEXEC)
     if WIN:

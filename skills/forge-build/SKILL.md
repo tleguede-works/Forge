@@ -15,7 +15,7 @@ For each slice in the order of `.forge/plans/index.md`:
 2. Read the plan. Write the failing tests for its `TC-` lines first.
 3. Implement the tasks in order. Tick each task in the plan file by changing `[ ]` to `[x]`.
 4. Run the slice tests and the regression set from the test plan.
-5. `forge slice done <Sxx> --evidence "<command> : <result>"`. The evidence is the real command and its real output summary.
+5. `forge slice done <Sxx> --evidence "<command> : <result>"` (the CLI refuses any other shape). The evidence is the real command and its real output summary.
 6. Run `forge memory checkpoint` before committing.
 
 ## Phase 8: validation (deliverable `validation-report`, `.forge/validation-report.md`)
@@ -27,7 +27,7 @@ For each slice in the order of `.forge/plans/index.md`:
 ## Rules
 
 - **B1 Tests first.** A slice marked done without tests written before the code is a violation the reviewers report as `critical`.
-- **B2 Plan is the contract.** Build what the plan says. When the plan is wrong, stop (R9), tell the user, and use `forge phase reopen plans --reason ...` after the user agrees. Never edit an approved plan to match the code.
+- **B2 Plan is the contract.** Build what the plan says. When the plan is wrong, stop (R9), tell the user, and use `forge phase reopen plans --reason ...` after the user agrees. In client mode, record the deviation with `forge client ask --kind deviation ...` and wait for the answer or its stated default. Never edit an approved plan to match the code.
 - **B3 No scope growth.** A feature absent from the PRD is not built. Propose it to the user; it enters through `forge phase reopen prd`.
 - **B4 Evidence is real.** `slice done` carries the actual test command and its result. A claim with no command is refused by the reviewers.
 - **B5 Layout regions are built.** Every `LAY-x/region` token in a plan has a matching element in the code when its slice is done.
