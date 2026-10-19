@@ -1,11 +1,11 @@
 # Exact file formats parsed by `forge design check`
 
 ## screen-map.md
-A table. Each screen row starts with `| SCR-`. Columns: id, route, layout, role.
+A table. Each screen row starts with `| SCR-`. Columns: id, route, layout, role, release. The release is a heading of `roadmap.md` (`MVP`, `R1`, `R2`).
 ```
-| id | route | layout | role |
-|---|---|---|---|
-| SCR-001 | /home | LAY-app | user |
+| id | route | layout | role | release |
+|---|---|---|---|---|
+| SCR-001 | /home | LAY-app | user | MVP |
 ```
 
 ## layouts.md

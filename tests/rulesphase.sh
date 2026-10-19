@@ -3,6 +3,14 @@
 set -u
 CLIDIR="$(cd "$(dirname "$0")/.." && pwd)/cli"; export CLIDIR
 F="python3 $CLIDIR/forge.py"
+doc() { $F template "$1" | sed 's/<fill>/sample text/' > "$2"; python3 - "$2" "${3:-}" "${4:-}" <<'P'
+import sys,re
+p,a,b=sys.argv[1:4]; t=open(p).read()
+if a: t=re.sub(r"(^## [^\n]*\n)", lambda m: m.group(1)+a.replace("\\n","\n")+"\n", t, count=1, flags=re.M)
+if b: t=t.rstrip("\n")+"\n"+b.replace("\\n","\n")+"\n"
+open(p,"w").write(t)
+P
+}
 T=$(mktemp -d); cd "$T"
 ok()   { "$@" >/dev/null 2>&1 || { echo "FAIL (expected success): $*"; exit 1; }; }
 fail() { "$@" >/dev/null 2>&1 && { echo "FAIL (expected refusal): $*"; exit 1; }; true; }
@@ -43,7 +51,7 @@ fail $F phase start plans                         # rules phase is not approved
 ok   $F phase start rules
 fail $F register plan:S01 .forge/x.md             # a plan is not a rules-phase deliverable
 fail $F gate check                                # no report yet
-printf '# Rules report\n- target: opencode\n- budget: 800\nTemplates selected: react (package.json lists react)\n' > .forge/rules-report.md
+doc rules-report .forge/rules-report.md "- target: opencode\n- budget: 800"
 ok $F register rules-report .forge/rules-report.md
 rv rules-report qa; rv rules-report redteam
 ok $F gate check

@@ -4,12 +4,12 @@
 | Item | Delivers (IDs) | Why in the MVP |
 |---|---|---|
 
-## V1
-## V2
+## R1
+## R2
 
 ## Trade-offs
 | Decision | Gain | Cost | Cost of reversal |
 |---|---|---|---|
 
 ## Coverage
-Every B, E, V and C ID of the PRD appears above exactly once, or in PRD section 9.
+Every B, E, V, C and L ID of the PRD appears above exactly once, or in the PRD out of scope section.

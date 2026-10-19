@@ -6,6 +6,7 @@ T=$(mktemp -d); cd "$T"; $F init --name D >/dev/null
 D=.forge/design; mkdir -p $D/screens .forge/plans
 ok()   { "$@" >/dev/null 2>&1 || { echo "FAIL (expected pass): $*"; exit 1; }; }
 fail() { "$@" >/dev/null 2>&1 && { echo "FAIL (expected refusal): $*"; exit 1; }; true; }
+printf '## MVP\nx\n' > .forge/roadmap.md
 cat > $D/layouts.md <<'L'
 # Layouts
 ## LAY-app Mobile app shell
@@ -14,9 +15,9 @@ cat > $D/layouts.md <<'L'
 L
 cat > $D/screen-map.md <<'L'
 # Screen map
-| id | route | layout | role |
-|---|---|---|---|
-| SCR-001 | /home | LAY-app | user |
+| id | route | layout | role | release |
+|---|---|---|---|---|
+| SCR-001 | /home | LAY-app | user | MVP |
 L
 good() { cat > $D/screens/SCR-001.md <<'S'
 # SCR-001 Home
@@ -39,6 +40,8 @@ printf '\n# SCR-009 Admin users\n' >> $D/screens/SCR-001.md; fail $F design chec
 sed -i 's/LAY-app | user/LAY-nope | user/' $D/screen-map.md; fail $F design check; sed -i 's/LAY-nope/LAY-app/' $D/screen-map.md
 # missing why
 sed -i 's/the cards are what every action applies to/x/' $D/screens/SCR-001.md; fail $F design check; good
+# release must be a heading of the roadmap
+sed -i 's/| MVP |/| V9 |/' $D/screen-map.md; fail $F design check; sed -i 's/| V9 |/| MVP |/' $D/screen-map.md
 # orphan screen file
 cp $D/screens/SCR-001.md $D/screens/SCR-002.md; sed -i 's/SCR-001/SCR-002/' $D/screens/SCR-002.md; fail $F design check; rm $D/screens/SCR-002.md
 ok $F design check

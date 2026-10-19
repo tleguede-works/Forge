@@ -2,9 +2,11 @@
 
 Language rule: repository files in English; deliverables in `.forge/` follow the project language.
 
-## Done and tested (nine suites in tests/, plus manual installer runs with a fake HOME)
+## Done and tested (eleven suites in tests/, plus manual installer runs with a fake HOME)
 - CLI: init, status, mode, phase order, register, hash-bound QA and Red Team reviews, gate (check, approve with evidence, client-mode auto rule), memory (resume, checkpoint, decide, learn, log), hooks status, lint-rules, AGENTS.md block injection, design check (one screen per file, ranked anatomy, rules H1 and H2, layout defined, layout regions covered by plans).
 - Gate integration: design phase runs the design check and requires every screen to be registered; plans phase requires every layout region to have a task.
+- Phase `compliance` (between landscape and prd), first version: sourced register of obligations per market and topic, owner decisions recorded with `--user-evidence`, freshness limit, PRD requirements `L<n>` tied to obligations in both directions, rechecks required before the prd, architecture and validation gates (tests/compliance.sh). Skill `forge-compliance` and its agent; Forge ships no legal content, only the method.
+- Deliverable structure: required sections and non-empty content are checked at registration for 12 deliverables; `forge template <name>` prints the skeleton; tests/templates.sh keeps the CLI and the skill templates in sync. Releases are named MVP, R1, R2; screens carry a `release` column; the roadmap is a client touchpoint.
 - Audit of 2026-10-19: reference graph, order review, 11 findings fixed with regression tests (`docs/AUDIT-2026-10-19.md`). Phase 0 has its own skill, `forge-bootstrap`; client-mode touchpoints need a resolved liaison review.
 - Skills: forge, forge-memory, forge-bootstrap, forge-discover, forge-design, forge-architect, forge-plan, forge-build, forge-rules (with references and templates). forge-rules replaces Project Rules Architect; analysis in docs/forge-rules-analysis.md.
 - Phase `rules` (between architecture and plans): `rules-report` deliverable, the gate runs the ten audit checks with the report's target and budget, approved rule files are hash-protected against silent edits (tests/rulesphase.sh). Plans and build read the rule files; build rule B6 ties slice evidence to the project's gate commands.

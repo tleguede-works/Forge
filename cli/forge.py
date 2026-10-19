@@ -5,11 +5,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 VERSION = 3
-PHASES = ["bootstrap", "landscape", "prd", "roadmap", "design",
+PHASES = ["bootstrap", "landscape", "compliance", "prd", "roadmap", "design",
           "architecture", "rules", "plans", "build", "validation"]
 REQUIRED = {
     "bootstrap": ["contract", "brief"],
     "landscape": ["landscape"],
+    "compliance": ["compliance-register"],
     "prd": ["prd"],
     "roadmap": ["roadmap"],
     "design": ["design-references", "screen-map", "layouts", "design-system"],
@@ -21,7 +22,7 @@ REQUIRED = {
 }
 PREFIX_PHASE = {"screen:": "design", "plan:": "plans"}  # multi-instance deliverables
 REVIEWERS = ("qa", "redteam")
-TOUCHPOINTS = ("bootstrap", "prd", "design", "validation")  # client-mode phases that need the client
+TOUCHPOINTS = ("bootstrap", "compliance", "prd", "roadmap", "design", "validation")  # client-mode phases that need the client
 BLOCKING = ("critical", "major")
 BEGIN, END = "<!-- forge:start v3 -->", "<!-- forge:end -->"
 BANNED = [r"\bif possible\b", r"\bideally\b", r"\bpreferably\b", r"\bgenerally\b", r"\bnormally\b",
@@ -79,6 +80,60 @@ def save(root, s):
 
 def sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()[:16]
+
+
+HEADINGS = {
+    "brief": ["request in the client", "goal and success measure", "users", "target countries and regulated areas",
+              "payments, subscriptions and data", "stated technical constraints", "deadline and budget signals",
+              "who answers", "open questions"],
+    "contract": ["parties and roles", "how the work runs", "touchpoints and answer times", "changes after approval",
+                 "not included", "language of deliverables"],
+    "landscape": ["idea and premise challenge", "archetype and core loop", "products studied", "invariants",
+                  "decisions", "research outcome"],
+    "compliance-register": ["scope", "obligations", "open legal questions", "limits of this register"],
+    "prd": ["problem and audience", "goals and success measures", "business rules", "edge cases", "validations",
+            "constraints", "legal requirements", "user stories", "open questions", "out of scope"],
+    "roadmap": ["mvp", "r1", "r2", "trade-offs", "coverage"],
+    "design-references": ["archetype and core loop", "reference products", "mood", "anti-references",
+                          "directions presented to the client"],
+    "design-system": ["colors", "typography", "spacing and radius", "primitive components", "navigation",
+                      "motion and feedback"],
+    "architecture": ["stack and justification", "modules", "foundations", "slices", "data model", "api contracts",
+                     "external integrations", "dependencies", "deployment and configuration",
+                     "risks and open questions"],
+    "rules-report": ["files produced", "template selection", "baseline status of each gate", "audit output"],
+    "test-plan": ["strategy", "coverage matrix", "regression set", "environments and data"],
+    "validation-report": ["test plan results", "deviations from the plans and the prd", "requirements not met",
+                          "acceptance summary"],
+}
+
+
+def _norm_heading(h):
+    return re.sub(r"^\d+[.)]?\s*", "", h.strip().lower().replace("\u2019", "'"))
+
+
+def structure_problems(name, text):
+    out, lines = [], text.splitlines()
+    heads = [(i, len(m.group(1)), _norm_heading(m.group(2))) for i, l in enumerate(lines)
+             if (m := re.match(r"^(#{1,6})\s+(.*?)\s*$", l))]
+    for key in HEADINGS.get(name, []):
+        hit = next(((i, lv) for i, lv, h in heads if h.startswith(key)), None)
+        if not hit:
+            out.append(f"missing section '{key}'"); continue
+        i, lv = hit
+        end = next((j for j, l2, _ in heads if j > i and l2 <= lv), len(lines))
+        body = [l for l in lines[i + 1:end] if l.strip() and not re.match(r"^\|[\s:|-]+\|?$", l.strip())]
+        if not body:
+            out.append(f"section '{key}' is empty")
+    return out
+
+
+def cmd_template(a):
+    if a.name not in HEADINGS:
+        die(f"no structure is defined for '{a.name}' (known: {', '.join(sorted(HEADINGS))})")
+    print(f"# {a.name}\n")
+    for i, k in enumerate(HEADINGS[a.name], 1):
+        print(f"## {i}. {k[0].upper() + k[1:]}\n<fill>\n")
 
 
 def phase_of(name):
@@ -226,8 +281,11 @@ def cmd_register(a):
     if not p.is_file() or r / ".forge" not in p.parents:
         die("deliverable must be an existing file inside .forge/")
     txt = p.read_text(encoding="utf-8")
-    if re.search(r"\{\{[A-Z_]+\}\}|\bTODO\b|\bTBD\b", txt):
-        die("placeholders found (a {{TOKEN}}, TODO or TBD remains)")
+    if re.search(r"\{\{[A-Z_]+\}\}|\bTODO\b|\bTBD\b|<fill>", txt):
+        die("placeholders found (a {{TOKEN}}, TODO, TBD or <fill> remains)")
+    sp = structure_problems(a.name, txt)
+    if sp:
+        die("the deliverable does not follow its structure (forge template " + a.name + " prints it): " + "; ".join(sp))
     h = sha(p)
     old = s["deliverables"].get(a.name)
     entry = {"path": str(p.relative_to(r)), "phase": ph, "hash": h,
@@ -287,8 +345,16 @@ def gate_problems(r, s, ph):
             out.append(f"missing deliverable: {n}")
     if PHASES.index(ph) >= PHASES.index("roadmap"):
         out += premises_problems(r, s)
+    if ph == "compliance":
+        out += compliance_problems(r)
     if ph == "prd":
-        out += prd_problems(r)
+        out += prd_problems(r) + compliance_prd_problems(r)
+    if ph in RECHECK_PHASES and "compliance-register" in s["deliverables"]:
+        rc = s.get("compliance", {}).get("rechecks", {}).get(ph)
+        if not rc:
+            out.append(f"compliance recheck missing (forge compliance recheck --phase {ph} --evidence \"...\")")
+        elif rc["register_hash"] != s["deliverables"]["compliance-register"]["hash"]:
+            out.append("the compliance register changed after the recheck; run the recheck again")
     if ph == "roadmap":
         out += roadmap_problems(r)
     if ph == "architecture":
@@ -457,6 +523,15 @@ def design_problems(root):
     if not layouts:
         out.append("layouts.md defines no LAY- layout")
     ids = [r[0] for r in rows]
+    rm = root / ".forge" / "roadmap.md"
+    releases = {m.group(1).strip().lower() for m in re.finditer(r"^## (.+)$", rm.read_text(encoding="utf-8"), re.M)} if rm.is_file() else set()
+    if not releases:
+        out.append("roadmap.md has no release headings (## MVP, ## R1 ...)")
+    for r_ in rows:
+        if len(r_) < 5:
+            out.append(f"{r_[0]}: screen-map row needs a 5th column, release (a heading of roadmap.md)")
+        elif releases and r_[4].lower() not in releases:
+            out.append(f"{r_[0]}: release '{r_[4]}' is not a heading of roadmap.md")
     for dup in {i for i in ids if ids.count(i) > 1}:
         out.append(f"screen-map: duplicate id {dup}")
     for sid, route, lay, role in [r[:4] for r in rows]:
@@ -533,7 +608,7 @@ def cmd_design(a):
 
 
 # ---------------------------------------------------------------- coverage, plans, premises
-ID_RE = r"[BEVC]\d+"
+ID_RE = r"[BEVCL]\d+"
 
 
 def parse_prd(root):
@@ -541,7 +616,7 @@ def parse_prd(root):
     if not f.is_file():
         return None
     txt = f.read_text(encoding="utf-8")
-    m = re.search(r"^## 9\.", txt, re.M)
+    m = re.search(r"^## .*out of scope", txt, re.M | re.I)
     head, tail = (txt[:m.start()], txt[m.start():]) if m else (txt, "")
     pat = rf"^- \**({ID_RE})\b"
     return set(re.findall(pat, head, re.M)), set(re.findall(pat, tail, re.M))
@@ -552,7 +627,7 @@ def prd_problems(root):
     if not f.is_file():
         return ["prd.md is missing"]
     txt = f.read_text(encoding="utf-8")
-    m = re.search(r"^## 9\.", txt, re.M)
+    m = re.search(r"^## .*out of scope", txt, re.M | re.I)
     head, tail = (txt[:m.start()], txt[m.start():]) if m else (txt, "")
     pat = rf"^- \**({ID_RE})\b"
     live, gone = re.findall(pat, head, re.M), set(re.findall(pat, tail, re.M))
@@ -598,7 +673,7 @@ def coverage_problems(root):
     for sid, name, mod, serves in rows:
         for i in sorted(serves):
             if i in gone:
-                out.append(f"{sid} serves {i}, which is out of scope (PRD section 9)")
+                out.append(f"{sid} serves {i}, which is out of scope (PRD out of scope)")
             elif i not in live:
                 out.append(f"{sid} serves {i}, which does not exist in the PRD")
         served |= serves
@@ -616,7 +691,7 @@ def premises_problems(root, s):
     for n, d in s["deliverables"].items():
         for i in d.get("requires", []):
             if i in gone:
-                out.append(f"{n} depends on {i}, which was withdrawn (PRD section 9)")
+                out.append(f"{n} depends on {i}, which was withdrawn (PRD out of scope)")
             elif i not in live:
                 out.append(f"{n} depends on {i}, which does not exist in the PRD")
     return out
@@ -652,7 +727,7 @@ def plans_problems(root, s):
         out += [f"test-plan does not mention slice {sid}" for sid, *_ in rows if not re.search(rf"\b{sid}\b", ttxt)]
         if prd:
             for i in sorted(prd[0]):
-                if i[0] in "BEV" and not re.search(rf"\b{i}\b", ttxt):
+                if i[0] in "BEVL" and not re.search(rf"\b{i}\b", ttxt):
                     out.append(f"test-plan covers no test for {i}")
     return out
 
@@ -1099,6 +1174,115 @@ def cmd_client_report(r, s):
     save(r, s); journal(r, "client_report", "report data produced")
 
 
+# ---------------------------------------------------------------- compliance
+OB_COLS = ["id", "jurisdiction", "trigger", "obligation", "source", "retrieved", "applicability", "legal_review", "decision"]
+RECHECK_PHASES = ("prd", "architecture", "validation")
+
+
+def decision_user_evidence(root, ref):
+    m = re.search(r"\bD-\d+\b", ref or "")
+    dec = mem(root, "decisions.md").read_text(encoding="utf-8")
+    if not m or f"## {m.group(0)} " not in dec:
+        return False
+    blk = dec.split(f"## {m.group(0)} ", 1)[1].split("\n## ", 1)[0]
+    return bool(re.search(r"^user-evidence:\s*\S{3,}", blk, re.M))
+
+
+def parse_register(root):
+    f = root / ".forge" / "compliance-register.md"
+    if not f.is_file():
+        return None
+    txt = f.read_text(encoding="utf-8")
+    lst = lambda k: [x.strip() for x in (re.search(rf"^- {k}:\s*(.*)$", txt, re.M) or [None, ""])[1].split(",") if x.strip()]
+    age = re.search(r"^- max-age-days:\s*(\d+)", txt, re.M)
+    rows = []
+    for line in txt.splitlines():
+        if re.match(r"^\|\s*OB-\d+\s*\|", line):
+            c = [x.strip() for x in line.strip().strip("|").split("|")]
+            if len(c) >= len(OB_COLS):
+                rows.append(dict(zip(OB_COLS, c)))
+    return {"markets": lst("markets"), "topics": lst("topics"), "max_age": int(age.group(1)) if age else 180}, rows
+
+
+def compliance_problems(root):
+    reg = parse_register(root)
+    if reg is None:
+        return ["compliance-register.md is missing"]
+    cfg, rows = reg
+    out = []
+    if not cfg["markets"]:
+        out.append("the register header '- markets:' is empty (country codes, comma separated)")
+    if not cfg["topics"]:
+        out.append("the register header '- topics:' is empty (payments, subscriptions, personal-data ...)")
+    if not rows:
+        out.append("the register has no OB-<n> row")
+    ids = [r["id"] for r in rows]
+    out += [f"{i}: defined more than once" for i in sorted({i for i in ids if ids.count(i) > 1})]
+    today = datetime.now(timezone.utc).date()
+    for r in rows:
+        o = r["id"]
+        if r["applicability"] not in ("applies", "not-applicable", "unknown"):
+            out.append(f"{o}: applicability must be applies, not-applicable or unknown")
+        if r["legal_review"] not in ("required", "done", "risk-accepted", "not-needed"):
+            out.append(f"{o}: legal_review must be required, done, risk-accepted or not-needed")
+        if r["applicability"] == "unknown":
+            out.append(f"{o}: applicability is still unknown; decide it")
+        if not re.match(r"^https?://\S+$", r["source"]):
+            out.append(f"{o}: source must be the URL of the statute or regulator page")
+        try:
+            d = datetime.strptime(r["retrieved"], "%Y-%m-%d").date()
+            if d > today:
+                out.append(f"{o}: retrieved date is in the future")
+            elif (today - d).days > cfg["max_age"]:
+                out.append(f"{o}: source retrieved {(today - d).days} days ago; the limit is {cfg['max_age']} days, verify it again")
+        except ValueError:
+            out.append(f"{o}: retrieved must be a date YYYY-MM-DD")
+        if r["legal_review"] == "required":
+            out.append(f"{o}: legal review is required and not done")
+        if (r["applicability"] == "not-applicable" or r["legal_review"] in ("done", "risk-accepted")) and not decision_user_evidence(root, r["decision"]):
+            out.append(f"{o}: needs a decision (D-<n>) recorded with --user-evidence")
+    for m in cfg["markets"]:
+        if not any(m.lower() in r["jurisdiction"].lower() for r in rows):
+            out.append(f"market {m} has no obligation row")
+    body = " ".join(f"{r['trigger']} {r['obligation']}" for r in rows).lower()
+    out += [f"topic '{t}' appears in no obligation row" for t in cfg["topics"] if t.lower() not in body]
+    return out
+
+
+def compliance_prd_problems(root):
+    reg, prd = parse_register(root), root / ".forge" / "prd.md"
+    if reg is None or not prd.is_file():
+        return []
+    applies = {r["id"] for r in reg[1] if r["applicability"] == "applies"}
+    cited, out = set(), []
+    for line in prd.read_text(encoding="utf-8").splitlines():
+        m = re.match(r"^- \**(L\d+)\b(.*)$", line)
+        if m:
+            obs = set(re.findall(r"OB-\d+", m.group(2)))
+            if not obs:
+                out.append(f"{m.group(1)} cites no obligation (write 'OB-<n>' on the line)")
+            for o in obs:
+                if o not in applies:
+                    out.append(f"{m.group(1)} cites {o}, which is not an applicable obligation of the register")
+            cited |= obs
+    out += [f"obligation {o} applies and is covered by no legal requirement L<n> in the PRD" for o in sorted(applies - cited)]
+    return out
+
+
+def cmd_compliance(a):
+    r = need_root(); s = load(r)
+    if s["phases"]["compliance"] != "approved":
+        die("recheck runs after the compliance phase is approved")
+    if a.phase not in RECHECK_PHASES:
+        die(f"--phase must be one of {RECHECK_PHASES}")
+    if len((a.evidence or "").strip()) < 20:
+        die("--evidence must say what was re-checked and what was found (20 characters or more)")
+    d = s["deliverables"]["compliance-register"]
+    s.setdefault("compliance", {"rechecks": {}})["rechecks"][a.phase] = {"register_hash": d["hash"], "evidence": a.evidence, "at": now()}
+    save(r, s); journal(r, "compliance_recheck", f"{a.phase}: {a.evidence}")
+    print(f"compliance recheck recorded for {a.phase}")
+
+
 # ---------------------------------------------------------------- hooks
 def cmd_hooks(a):
     r = need_root(); home = Path.home()
@@ -1168,6 +1352,9 @@ def main():
     p.add_argument("--target", default="opencode", choices=["opencode", "claude", "agents"])
     p.add_argument("--budget", type=int, default=800); p.add_argument("--json", action="store_true"); p.set_defaults(f=cmd_rules)
     p = sub.add_parser("kit"); p.add_argument("action", choices=["verify"]); p.set_defaults(f=cmd_kit)
+    p = sub.add_parser("compliance"); p.add_argument("action", choices=["recheck"]); p.add_argument("--phase", default="")
+    p.add_argument("--evidence", default=""); p.set_defaults(f=cmd_compliance)
+    p = sub.add_parser("template"); p.add_argument("name"); p.set_defaults(f=cmd_template)
     p = sub.add_parser("hooks"); p.add_argument("action", choices=["status"]); p.set_defaults(f=cmd_hooks)
     p = sub.add_parser("lint-rules"); p.add_argument("paths", nargs="+"); p.set_defaults(f=cmd_lint)
     a = ap.parse_args()

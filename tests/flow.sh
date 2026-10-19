@@ -59,7 +59,7 @@ fail $F check plans                                                          # 1
 # slices flow and reopen
 python3 - <<'P'
 import os,sys;sys.path.insert(0,os.environ["CLIDIR"]);import forge;R=forge.find_root();s=forge.load(R)
-for p in ["bootstrap","landscape","prd","roadmap","design","architecture","rules","plans"]: s["phases"][p]="approved"
+for p in ["bootstrap","landscape","compliance","prd","roadmap","design","architecture","rules","plans"]: s["phases"][p]="approved"
 s["phases"]["build"]="in_progress"; s["phase"]["current"]="build"; forge.save(R,s)
 P
 ok $F slice start S01

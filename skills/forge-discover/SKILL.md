@@ -37,7 +37,7 @@ Template: `references/prd-template.md`.
 
 Template: `references/roadmap-template.md`.
 
-1. Split the PRD into MVP, V1, V2. Each item lists the requirement IDs it delivers.
+1. Split the PRD into releases named MVP, R1, R2 (never V1 or V2: those look like validation IDs). Each item lists the requirement IDs it delivers.
 2. Every PRD requirement appears in exactly one release or in Out of scope. A requirement in no release is a gap.
 3. Record each scope trade-off with its cost of reversal.
 

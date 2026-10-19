@@ -2,7 +2,21 @@
 # End-to-end test of the Forge CLI. Usage: tests/e2e.sh   (exits non-zero on the first wrong result)
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+CLIDIR="$ROOT/cli"; export CLIDIR
 F="python3 $ROOT/cli/forge.py"
+doc() { $F template "$1" | sed 's/<fill>/sample text/' > "$2"; python3 - "$2" "${3:-}" "${4:-}" <<'P'
+import sys,re
+p,a,b=sys.argv[1:4]; t=open(p).read()
+if a: t=re.sub(r"(^## [^\n]*\n)", lambda m: m.group(1)+a.replace("\\n","\n")+"\n", t, count=1, flags=re.M)
+if b: t=t.rstrip("\n")+"\n"+b.replace("\\n","\n")+"\n"
+open(p,"w").write(t)
+P
+}
+mut() { python3 -c "
+import os,sys; sys.path.insert(0,os.environ['CLIDIR']); import forge
+R=forge.find_root(); s=forge.load(R)
+$1
+forge.save(R,s)"; }
 rv() { mkdir -p .forge/reviews; cp "$3" ".forge/reviews/${1//:/_}.$2.json"; $F review "$1" --agent "$2" --report ".forge/reviews/${1//:/_}.$2.json"; }
 T=$(mktemp -d); cd "$T"
 ok()   { "$@" >/dev/null 2>&1 || { echo "FAIL (expected success): $*"; exit 1; }; }
@@ -15,7 +29,7 @@ echo x > .forge/prd.md
 fail $F register prd .forge/prd.md                 # premature artifact (no phase started)
 fail $F phase start landscape                      # order
 ok   $F phase start bootstrap
-echo contract > .forge/contract.md; echo conv > .forge/brief.md
+doc contract .forge/contract.md; doc brief .forge/brief.md
 ok $F register contract .forge/contract.md; ok $F register brief .forge/brief.md
 fail $F gate check                                 # no reviews
 fail rv contract qa bad.json   # blocking finding
@@ -25,14 +39,15 @@ fail $F gate approve                               # no evidence
 fail $F gate approve --evidence auto               # interactive mode forbids auto
 ok   $F gate approve --evidence "approved"
 ok   $F phase start landscape
-echo "L" > .forge/landscape.md; ok $F register landscape .forge/landscape.md; review_all landscape
+doc landscape .forge/landscape.md; ok $F register landscape .forge/landscape.md; review_all landscape
 echo more >> .forge/landscape.md
 fail rv landscape qa ok.json   # stale
 ok $F register landscape .forge/landscape.md; review_all landscape
 ok $F mode client --evidence "the user asked for client mode"
 ok $F gate approve --evidence auto                 # landscape is not a client touchpoint
+mut 's["phases"]["compliance"]="approved"'   # compliance is covered by tests/compliance.sh
 ok $F phase start prd
-printf "## 3. Business rules\n- B1 rule\n" > .forge/prd.md; ok $F register prd .forge/prd.md; review_all prd
+doc prd .forge/prd.md "- B1 rule"; ok $F register prd .forge/prd.md; review_all prd
 fail $F gate approve --evidence auto               # prd is a touchpoint
 mkdir -p .forge/client; echo "Plain summary for the client" > .forge/client/prd-summary.md
 echo '{"questions":[{"where":"B1","question":"what is B1?"}]}' > .forge/reviews/prd.client.json

@@ -3,6 +3,14 @@
 set -u
 CLIDIR="$(cd "$(dirname "$0")/.." && pwd)/cli"; export CLIDIR
 F="python3 $CLIDIR/forge.py"
+doc() { $F template "$1" | sed 's/<fill>/sample text/' > "$2"; python3 - "$2" "${3:-}" "${4:-}" <<'P'
+import sys,re
+p,a,b=sys.argv[1:4]; t=open(p).read()
+if a: t=re.sub(r"(^## [^\n]*\n)", lambda m: m.group(1)+a.replace("\\n","\n")+"\n", t, count=1, flags=re.M)
+if b: t=t.rstrip("\n")+"\n"+b.replace("\\n","\n")+"\n"
+open(p,"w").write(t)
+P
+}
 rv() { mkdir -p .forge/reviews; cp "$3" ".forge/reviews/${1//:/_}.$2.json"; $F review "$1" --agent "$2" --report ".forge/reviews/${1//:/_}.$2.json"; }
 T=$(mktemp -d); cd "$T"
 ok()   { "$@" >/dev/null 2>&1 || { echo "FAIL (expected success): $*"; exit 1; }; }
@@ -10,7 +18,7 @@ fail() { "$@" >/dev/null 2>&1 && { echo "FAIL (expected refusal): $*"; exit 1; }
 echo '{"findings":[]}' > clean.json
 ok $F init --name Adv --lang en
 ok $F phase start bootstrap
-echo contract > .forge/contract.md; echo conv > .forge/brief.md
+doc contract .forge/contract.md; doc brief .forge/brief.md
 ok $F register contract .forge/contract.md; ok $F register brief .forge/brief.md
 # 1. Hand-edit state.json to approve the phase
 python3 - <<'P'
@@ -24,7 +32,7 @@ P
 git_restore; ok $F status                           # putting the original content back is valid (same as git checkout)
 # restore a clean state (simulates `git checkout`)
 rm -rf .forge AGENTS.md; ok $F init --name Adv --lang en; ok $F phase start bootstrap
-echo contract > .forge/contract.md; echo conv > .forge/brief.md
+doc contract .forge/contract.md; doc brief .forge/brief.md
 ok $F register contract .forge/contract.md; ok $F register brief .forge/brief.md
 # 2. Forged review report: dismissed finding with no reason, malformed severity
 echo '{"findings":[{"id":"A","severity":"critical","status":"dismissed","evidence":"x"}]}' > r1.json

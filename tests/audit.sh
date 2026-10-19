@@ -3,6 +3,14 @@
 set -u
 CLIDIR="$(cd "$(dirname "$0")/.." && pwd)/cli"; export CLIDIR
 F="python3 $CLIDIR/forge.py"
+doc() { $F template "$1" | sed 's/<fill>/sample text/' > "$2"; python3 - "$2" "${3:-}" "${4:-}" <<'P'
+import sys,re
+p,a,b=sys.argv[1:4]; t=open(p).read()
+if a: t=re.sub(r"(^## [^\n]*\n)", lambda m: m.group(1)+a.replace("\\n","\n")+"\n", t, count=1, flags=re.M)
+if b: t=t.rstrip("\n")+"\n"+b.replace("\\n","\n")+"\n"
+open(p,"w").write(t)
+P
+}
 T=$(mktemp -d); cd "$T"
 ok()   { "$@" >/dev/null 2>&1 || { echo "FAIL (expected success): $*"; exit 1; }; }
 fail() { "$@" >/dev/null 2>&1 && { echo "FAIL (expected refusal): $*"; exit 1; }; true; }
@@ -29,29 +37,29 @@ mut 's["phases"]["plans"]="approved"; s["phases"]["build"]="in_progress"; s["pha
 $F status | grep -q "forge slice start S01" || { echo "FAIL: build next action does not name the slice"; exit 1; }
 # 3. PRD ids: unique, never reused
 D=$(mktemp -d); cd $D; ok $F init --name P
-mut 's["phases"]["bootstrap"]="approved"; s["phases"]["landscape"]="approved"; s["phases"]["prd"]="in_progress"; s["phase"]["current"]="prd"'
+mut 's["phases"]["bootstrap"]="approved"; s["phases"]["landscape"]="approved"; s["phases"]["compliance"]="approved"; s["phases"]["prd"]="in_progress"; s["phase"]["current"]="prd"'
 rv() { mkdir -p .forge/reviews; echo '{"findings":[]}' > ".forge/reviews/$1.$2.json"; $F review "$1" --agent "$2" --report ".forge/reviews/$1.$2.json"; }
-printf '## 3. Business rules\n- B1 first\n- B1 second\n' > .forge/prd.md
+doc prd .forge/prd.md "- B1 first\n- B1 second"
 ok $F register prd .forge/prd.md; rv prd qa >/dev/null; rv prd redteam >/dev/null
 fail $F gate check                                          # duplicated id
-printf '## 3. Business rules\n- B1 first\n## 9. Out of scope\n- B1 withdrawn: reason\n' > .forge/prd.md
+doc prd .forge/prd.md "- B1 first" "- B1 withdrawn: reason"
 ok $F register prd .forge/prd.md; rv prd qa >/dev/null; rv prd redteam >/dev/null
 fail $F gate check                                          # id both live and withdrawn
-printf 'no ids here\n' > .forge/prd.md
+doc prd .forge/prd.md
 ok $F register prd .forge/prd.md; rv prd qa >/dev/null; rv prd redteam >/dev/null
 fail $F gate check                                          # no id at all
-printf '## 3. Business rules\n- B1 first\n- E1 edge\n' > .forge/prd.md
+doc prd .forge/prd.md "- B1 first\n- E1 edge"
 ok $F register prd .forge/prd.md; rv prd qa >/dev/null; rv prd redteam >/dev/null
 ok $F gate check
 # 4. Roadmap covers every live requirement and invents none
 mut 's["phases"]["prd"]="approved"; s["phases"]["roadmap"]="in_progress"; s["phase"]["current"]="roadmap"'
-printf '## MVP\n- Pay: B1\n' > .forge/roadmap.md
+doc roadmap .forge/roadmap.md "- Pay: B1"
 ok $F register roadmap .forge/roadmap.md; rv roadmap qa >/dev/null; rv roadmap redteam >/dev/null
 fail $F gate check                                          # E1 appears nowhere
-printf '## MVP\n- Pay: B1, E1, V9\n' > .forge/roadmap.md
+doc roadmap .forge/roadmap.md "- Pay: B1, E1, V9"
 ok $F register roadmap .forge/roadmap.md; rv roadmap qa >/dev/null; rv roadmap redteam >/dev/null
 fail $F gate check                                          # V9 does not exist
-printf '## MVP\n- Pay: B1, E1\n' > .forge/roadmap.md
+doc roadmap .forge/roadmap.md "- Pay: B1, E1"
 ok $F register roadmap .forge/roadmap.md; rv roadmap qa >/dev/null; rv roadmap redteam >/dev/null
 ok $F gate check
 echo "AUDIT PASS"

@@ -26,7 +26,7 @@ Rights by role:
 
 | Role | Reads | Writes |
 |---|---|---|
-| producer (`forge-analyst`, `forge-designer`, `forge-architect`, `forge-builder`) | project files | only its own deliverable under `.forge/`, or the assigned source files |
+| producer (`forge-analyst`, `forge-compliance`, `forge-designer`, `forge-architect`, `forge-builder`) | project files | only its own deliverable under `.forge/`, or the assigned source files |
 | `forge-qa` | the deliverable and its inputs | one JSON report, nothing else |
 | `forge-redteam` | the deliverable and its inputs | one JSON report, nothing else |
 | `forge-client-liaison` | the client-facing document only | one list of questions, no verdict |

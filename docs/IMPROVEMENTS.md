@@ -9,7 +9,7 @@ Status values: `to study`, `design written`, `implemented`.
 | Rank | Item | Why this rank | Effort | Depends on |
 |---|---|---|---|---|
 | 1 | I-006 Full audit (first pass done: `docs/AUDIT-2026-10-19.md`) | Cheap, and it finds defects that would corrupt every later test. Two real holes are already known (see the item) | Medium | none |
-| 2 | I-004 Regulatory compliance (design discussion first) | It changes the phase list, so it must be decided before the end-to-end test; the demo target (banking) is a regulated sector | Medium, mostly design | I-006 findings |
+| 2 | I-004 Regulatory compliance (first version done) | It changes the phase list, so it must be decided before the end-to-end test; the demo target (banking) is a regulated sector | Medium, mostly design | I-006 findings |
 | 3 | I-005 End-to-end test: Togo mobile banking demo | Proves the system on a real case and supports the owner's business goal; it should exercise compliance, so it follows rank 2 | Medium | I-006, I-004; needs an environment with real sub-agents |
 | 4 | I-001 Verification before every commit | Well bounded, high value in the build phase, but the end-to-end test stops before the build, so it can wait | Medium | I-006 |
 | 5 | I-002 Existing project: add features | Highest strategic value for client work, and the largest design question (extend Forge or a separate system) | Large | I-006; study of code-graph tools |
@@ -195,7 +195,13 @@ A design note, the new deliverables and their checks, and a worked example on a 
 
 ---
 
-## I-004 Regulatory compliance from the first phases (to study; discuss before deciding)
+## I-004 Regulatory compliance from the first phases (first version implemented 2026-10-19; open points below)
+
+### Status
+
+Implemented as the phase `compliance` between `landscape` and `prd` (see `docs/STATUS.md` and `tests/compliance.sh`): register of obligations with jurisdiction, trigger, primary source and retrieval date; applicability and legal review decided by the owner with recorded words; freshness limit; requirements `L<n>` linked to obligations; rechecks before the prd, architecture and validation gates; client touchpoint.
+
+Still open: how heavy the phase is for a very small project; whether a periodic freshness reminder should exist outside the phase gates; which topics the brief must always ask about; how legal content from a real run reads to a lawyer (to learn from the banking demo, I-005); a way to share a vetted register across projects without hiding that laws change.
 
 ### Goal
 

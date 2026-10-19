@@ -13,7 +13,7 @@ fail $K kit verify
 cd $(mktemp -d); $K init --name K >/dev/null 2>&1
 $K status 2>&1 | grep -q "KIT MODIFIED" || { echo "FAIL: status does not report the modified kit"; exit 1; }
 $K phase start bootstrap >/dev/null 2>&1
-echo c > .forge/contract.md; echo v > .forge/brief.md
+$K template contract | sed "s/<fill>/x text/" > .forge/contract.md; $K template brief | sed "s/<fill>/x text/" > .forge/brief.md
 $K register contract .forge/contract.md >/dev/null; $K register brief .forge/brief.md >/dev/null
 mkdir -p .forge/reviews; echo '{"findings":[]}' > .forge/reviews/contract.qa.json; for x in contract.redteam brief.qa brief.redteam; do cp .forge/reviews/contract.qa.json .forge/reviews/$x.json; done
 for n in contract brief; do for ag in qa redteam; do $K review $n --agent $ag --report .forge/reviews/$n.$ag.json >/dev/null; done; done
