@@ -2,7 +2,7 @@
 
 Language rule: repository files in English; deliverables in `.forge/` follow the project language.
 
-## Done and tested (tests/e2e.sh, tests/design.sh, manual installer runs with a fake HOME)
+## Done and tested (seven suites in tests/, plus manual installer runs with a fake HOME)
 - CLI: init, status, mode, phase order, register, hash-bound QA and Red Team reviews, gate (check, approve with evidence, client-mode auto rule), memory (resume, checkpoint, decide, learn, log), hooks status, lint-rules, AGENTS.md block injection, design check (one screen per file, ranked anatomy, rules H1 and H2, layout defined, layout regions covered by plans).
 - Gate integration: design phase runs the design check and requires every screen to be registered; plans phase requires every layout region to have a task.
 - Skills: forge, forge-memory, forge-discover, forge-design, forge-architect, forge-plan, forge-build, forge-rules (with references and templates). forge-rules replaces Project Rules Architect; analysis in docs/forge-rules-analysis.md.
