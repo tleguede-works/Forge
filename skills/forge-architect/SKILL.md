@@ -15,7 +15,7 @@ Deliverables: `architecture` (`.forge/architecture.md`) and `slices` (`.forge/sl
 
 ## Procedure
 
-1. Read `prd.md`, `roadmap.md`, the design files, and `conventions.md`.
+1. Read `prd.md`, `roadmap.md`, the design files, and `brief.md`.
 2. Choose the stack. Each non-trivial choice gets a `forge memory decide` entry with the options rejected and the PRD constraint IDs (`C<n>`) it satisfies. Verify framework and library versions against official documentation; write the version you verified.
 3. List foundations. Every layout in `layouts.md` belongs to a foundation slice, and every region of that layout is named in the architecture.
 4. Cut the business features into slices. A slice is vertical, fits one plan of at most 15 tasks, and serves named PRD IDs.

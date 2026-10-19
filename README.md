@@ -29,17 +29,17 @@ Every deliverable gets a review by `forge-qa` (what is missing) and by `forge-re
 ## Layout
 
 - `cli/forge.py`: the single entry point for every state change (Python 3.9+, stdlib only).
-- `skills/`: `forge` (router and golden rules), `forge-memory`, `forge-discover`, `forge-design`, `forge-architect`, `forge-rules`, `forge-plan`, `forge-build`.
+- `skills/`: `forge` (router and golden rules), `forge-memory`, `forge-bootstrap`, `forge-discover`, `forge-design`, `forge-architect`, `forge-rules`, `forge-plan`, `forge-build`.
 - `agents/`: `forge` (orchestrator), `forge-qa`, `forge-redteam`, `forge-analyst`, `forge-designer`, `forge-architect`, `forge-builder`, `forge-client-liaison`.
-- `hooks/`: Claude Code hook script and settings snippet, OpenCode plugin.
+- `hooks/`: Claude Code hook script (wired into `settings.json` by the installer), OpenCode plugin.
 - `scripts/install.py`: the installer used by `install.sh` and `install.ps1`.
 - `docs/`: status, improvements under study, escape-hatch audit, migration notes from v2.
-- `tests/`: `e2e.sh`, `design.sh`, `flow.sh`, `adversarial.sh`, `rules.sh`, `rulesphase.sh`, `install.sh`. Run all seven before every change.
+- `tests/`: `e2e.sh`, `design.sh`, `flow.sh`, `adversarial.sh`, `rules.sh`, `rulesphase.sh`, `audit.sh`, `hooks.sh`, `install.sh`. Run all nine before every change.
 
 ## Quick check
 
 ```
-for t in e2e design flow adversarial rules rulesphase install; do bash tests/$t.sh || break; done
+for t in e2e design flow adversarial rules rulesphase audit hooks install; do bash tests/$t.sh || break; done
 python3 cli/forge.py lint-rules $(find skills agents -name '*.md')
 ```
 
@@ -50,4 +50,4 @@ forge init --name MyApp --lang fr
 forge status
 ```
 
-The `forge` skill reads `forge status` and tells the agent what to do next.
+The `forge` skill reads `forge status` and tells the agent what to do next. Start the work with the orchestrator agent: select the `forge` agent in OpenCode, or run `claude --agent forge` in Claude Code (not yet verified on a live install).

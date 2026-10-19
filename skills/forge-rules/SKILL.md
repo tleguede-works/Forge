@@ -29,7 +29,7 @@ The six design principles behind these rules are in `references/principles.md`. 
 Phase `rules` runs after `architecture` (the stack is decided) and before `plans` (the plans and the test plan quote the gate commands). Deliverable: `rules-report` (`.forge/rules-report.md`), written in the project language. Producer agent: `forge-architect`. Reviewers: `forge-qa` and `forge-redteam`.
 
 1. Produce the rule set in the project root with the procedure below. The rule files stay in the project, outside `.forge/`.
-2. Write `.forge/rules-report.md` with these lines, in this form: `- target: opencode|claude|agents`, `- budget: <total lines>`, then the template selection with the signal behind each choice, the baseline status of each gate, and the verbatim output of `forge rules audit`.
+2. Write `.forge/rules-report.md` from `references/rules-report-template.md` with these lines, in this form: `- target: opencode|claude|agents`, `- budget: <total lines>`, then the template selection with the signal behind each choice, the baseline status of each gate, and the verbatim output of `forge rules audit`.
 3. Register it, run both reviews, then `forge gate check`. The gate runs the same audit with the target and budget of the report and lists every failed check. Fix the rule files, not the report.
 4. On approval the CLI records a hash of the entry file (outside the Forge block) and of every rule file. A later edit to any of them is reported as `DRIFT` and blocks the next phase start until `forge phase reopen rules --reason ...` and a new gate.
 

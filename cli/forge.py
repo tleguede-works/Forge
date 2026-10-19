@@ -8,7 +8,7 @@ VERSION = 3
 PHASES = ["bootstrap", "landscape", "prd", "roadmap", "design",
           "architecture", "rules", "plans", "build", "validation"]
 REQUIRED = {
-    "bootstrap": ["contract", "conventions"],
+    "bootstrap": ["contract", "brief"],
     "landscape": ["landscape"],
     "prd": ["prd"],
     "roadmap": ["roadmap"],
@@ -166,10 +166,10 @@ def cmd_status(a):
     n = len(s.get("client", {}).get("pending", []))
     if n:
         print(f"client points pending: {n} (forge client list)")
-    print("next:", next_action(s))
+    print("next:", next_action(s, r))
 
 
-def next_action(s):
+def next_action(s, r=None):
     cur = s["phase"]["current"]
     if cur is None:
         return "forge phase start bootstrap"
@@ -177,8 +177,16 @@ def next_action(s):
         i = PHASES.index(cur)
         return f"forge phase start {PHASES[i+1]}" if i + 1 < len(PHASES) else "done"
     missing = [n for n in REQUIRED[cur] if n not in s["deliverables"]]
+    if cur == "plans" and r is not None:
+        missing += [f"plan:{x[0]}" for x in parse_slices(r) if f"plan:{x[0]}" not in s["deliverables"]]
     if missing:
         return f"produce and register: {', '.join(missing)}"
+    if cur == "build" and r is not None:
+        todo = [x[0] for x in parse_slices(r) if s.get("slices", {}).get(x[0]) != "done"]
+        run = [k for k, v in s.get("slices", {}).items() if v == "in_progress"]
+        if run:
+            return f"finish slice {run[0]}, then forge slice done {run[0]} --evidence \"<command> : <result>\""
+        return f"forge slice start {todo[0]}" if todo else "forge gate check"
     return "forge gate check"
 
 
@@ -202,7 +210,7 @@ def cmd_phase_start(a):
         die("approved work drifted: " + "; ".join(m for _, m, _ in dr) + ". Reopen the phase or restore the files")
     s["phases"][a.phase] = "in_progress"; s["phase"]["current"] = a.phase
     save(r, s); journal(r, "phase_start", a.phase)
-    write_now(r, f"Phase {a.phase} started", next_action(s), [], "")
+    write_now(r, f"Phase {a.phase} started", next_action(s, r), [], "")
     print("started", a.phase)
 
 
@@ -210,8 +218,8 @@ def cmd_phase_start(a):
 def cmd_register(a):
     r = need_root(); s = load(r)
     ph = phase_of(a.name)
-    if ph is None:
-        die(f"unknown deliverable '{a.name}'")
+    if ph is None or not re.fullmatch(r"[a-z][a-z-]*|screen:SCR-\d+|plan:S\d+", a.name):
+        die(f"unknown deliverable name '{a.name}' (allowed: the names in REQUIRED, screen:SCR-<n>, plan:S<n>)")
     if ph != s["phase"]["current"] or s["phases"][ph] != "in_progress":
         die(f"premature_artifact: '{a.name}' belongs to phase {ph}, current is {s['phase']['current']}")
     p = (r / a.path).resolve()
@@ -255,8 +263,12 @@ def cmd_review(a):
             die(f"bad status in {f['id']}")
         if f["status"] == "dismissed":
             m = re.search(r"\bD-\d+\b", f.get("reason", ""))
-            if not m or f"## {m.group(0)} " not in mem(r, "decisions.md").read_text(encoding="utf-8"):
+            dec = mem(r, "decisions.md").read_text(encoding="utf-8")
+            if not m or f"## {m.group(0)} " not in dec:
                 die(f"{f['id']}: a dismissed finding must cite a recorded decision (reason 'D-<n>' created with forge memory decide)")
+            blk = dec.split(f"## {m.group(0)} ", 1)[1].split("\n## ", 1)[0]
+            if f["severity"] in BLOCKING and not re.search(r"^user-evidence:\s*\S{3,}", blk, re.M):
+                die(f"{f['id']}: dismissing a {f['severity']} finding needs a decision recorded with --user-evidence (the user's own words)")
         if f["status"] == "open" and f["severity"] in BLOCKING:
             blocking += 1
     verdict = "ok" if blocking == 0 else "blocked"
@@ -275,6 +287,10 @@ def gate_problems(r, s, ph):
             out.append(f"missing deliverable: {n}")
     if PHASES.index(ph) >= PHASES.index("roadmap"):
         out += premises_problems(r, s)
+    if ph == "prd":
+        out += prd_problems(r)
+    if ph == "roadmap":
+        out += roadmap_problems(r)
     if ph == "architecture":
         out += coverage_problems(r)
     if ph == "rules":
@@ -329,6 +345,18 @@ def cmd_gate(a):
     kp = kit_problems()
     if kp:
         die("the installed Forge kit was modified (" + "; ".join(kp[:3]) + "); reinstall before approving")
+    if s["mode"] == "client" and ph in TOUCHPOINTS:
+        rv = s.get("client", {}).get("reviews", {}).get(ph)
+        rep_ = r / ".forge" / "reviews" / f"{ph}.client.json"
+        if not rv:
+            die(f"client mode, touchpoint {ph}: write .forge/client/{ph}-summary.md, run the forge-client-liaison agent on it, "
+                f"resolve its questions, then `forge client review --phase {ph} --document ... --report ...`")
+        if not (r / rv["document"]).is_file() or sha(r / rv["document"]) != rv["doc_hash"]:
+            die("the client summary changed after the liaison review; run the review again")
+        if not rep_.is_file() or sha(rep_) != rv["report_hash"]:
+            die("the liaison report changed after it was recorded")
+        if rv["unresolved"]:
+            die(f"{rv['unresolved']} liaison question(s) have no resolution")
     if a.evidence.strip().lower() == "auto":
         if s["mode"] != "client" or ph in TOUCHPOINTS:
             die(f"auto approval is allowed only in client mode, outside the touchpoint phases {TOUCHPOINTS}")
@@ -338,7 +366,7 @@ def cmd_gate(a):
         s["rules"] = {"hash": rules_hash(r), "target": t_, "budget": b_}
     save(r, s)
     journal(r, "gate_approved", f"{ph} evidence={a.evidence!r}")
-    write_now(r, f"Phase {ph} approved", next_action(s), [], "")
+    write_now(r, f"Phase {ph} approved", next_action(s, r), [], "")
     print(f"phase {ph} approved")
 
 
@@ -368,7 +396,7 @@ def cmd_memory(a):
         p = mem(r, fn)
         n = len(re.findall(rf"^## {pre}-\d+", p.read_text(encoding="utf-8"), re.M)) + 1
         with p.open("a", encoding="utf-8") as f:
-            f.write(f"## {pre}-{n:03d} ({now()})\n{a.text}\n\n")
+            f.write(f"## {pre}-{n:03d} ({now()})\n{a.text}\n" + (f"user-evidence: {a.user_evidence}\n" if a.user_evidence else "") + "\n")
         journal(r, a.action, f"{pre}-{n:03d}"); print(f"{pre}-{n:03d} recorded")
     elif a.action == "log":
         journal(r, "note", a.text); print("logged")
@@ -517,6 +545,34 @@ def parse_prd(root):
     head, tail = (txt[:m.start()], txt[m.start():]) if m else (txt, "")
     pat = rf"^- \**({ID_RE})\b"
     return set(re.findall(pat, head, re.M)), set(re.findall(pat, tail, re.M))
+
+
+def prd_problems(root):
+    f = root / ".forge" / "prd.md"
+    if not f.is_file():
+        return ["prd.md is missing"]
+    txt = f.read_text(encoding="utf-8")
+    m = re.search(r"^## 9\.", txt, re.M)
+    head, tail = (txt[:m.start()], txt[m.start():]) if m else (txt, "")
+    pat = rf"^- \**({ID_RE})\b"
+    live, gone = re.findall(pat, head, re.M), set(re.findall(pat, tail, re.M))
+    out = [f"{i} is defined {live.count(i)} times (an ID is unique)" for i in sorted(set(live)) if live.count(i) > 1]
+    out += [f"{i} is both live and withdrawn (an ID is never reused)" for i in sorted(set(live) & gone)]
+    if not live:
+        out.append("the PRD defines no requirement ID (B, E, V or C)")
+    return out
+
+
+def roadmap_problems(root):
+    prd, f = parse_prd(root), root / ".forge" / "roadmap.md"
+    if prd is None or not f.is_file():
+        return ["prd.md or roadmap.md is missing"]
+    live, gone = prd
+    txt = f.read_text(encoding="utf-8")
+    seen = set(re.findall(rf"\b({ID_RE})\b", txt))
+    out = [f"requirement {i} appears in no release and not in out of scope" for i in sorted(live - seen)]
+    out += [f"roadmap cites {i}, which does not exist in the PRD" for i in sorted(seen - live - gone)]
+    return out
 
 
 def parse_slices(root):
@@ -692,6 +748,24 @@ def cmd_client(a):
         save(r, s); journal(r, "client_resolve", f"#{p['id']} {a.answer}"); print("resolved")
     elif a.action == "report":
         cmd_client_report(r, s)
+    elif a.action == "review":
+        if a.phase not in TOUCHPOINTS:
+            die(f"--phase must be one of {TOUCHPOINTS}")
+        exp = r / ".forge" / "reviews" / f"{a.phase}.client.json"
+        doc = (r / a.document).resolve()
+        if Path(a.report).resolve() != exp.resolve() or not exp.is_file():
+            die(f"the liaison report must be {exp.relative_to(r)}")
+        if r / ".forge" not in doc.parents or not doc.is_file():
+            die("--document must be an existing file inside .forge/ (the plain-language summary)")
+        qs = json.loads(exp.read_text(encoding="utf-8")).get("questions")
+        if not isinstance(qs, list):
+            die("the report needs a 'questions' list")
+        open_ = [q for q in qs if not str(q.get("resolution", "")).strip()]
+        cl.setdefault("reviews", {})[a.phase] = {"document": str(doc.relative_to(r)), "doc_hash": sha(doc),
+            "report_hash": sha(exp), "questions": len(qs), "unresolved": len(open_)}
+        save(r, s); journal(r, "client_review", f"{a.phase} questions={len(qs)} unresolved={len(open_)}")
+        print(f"client review of {a.phase}: {len(qs)} question(s), {len(open_)} without a resolution")
+        sys.exit(1 if open_ else 0)
     elif a.action == "sweep":
         due = [p for p in cl["pending"] if p["by"] < today]
         for p in due:
@@ -765,7 +839,7 @@ def stack_of(root):
     for f in ("pom.xml", "build.gradle", "build.gradle.kts"):
         if (root / f).is_file():
             blob += (root / f).read_text(encoding="utf-8")
-    conv = root / ".forge" / "conventions.md"
+    conv = root / ".forge" / "brief.md"
     if not blob and conv.is_file():
         blob = conv.read_text(encoding="utf-8")
     for k, pat in (("nextjs", r"\"next\"|next\.js"), ("angular", r"@angular/"), ("spring", r"spring-boot|springframework"),
@@ -1006,7 +1080,7 @@ def cmd_client_report(r, s):
     print("- phases: " + ", ".join(f"{p}={s['phases'][p]}" for p in PHASES))
     appr = sorted(n for n, d in s["deliverables"].items() if s["phases"][d["phase"]] == "approved")
     print(f"- approved deliverables: {', '.join(appr) or 'none'}")
-    print(f"- next action: {next_action(s)}")
+    print(f"- next action: {next_action(s, r)}")
     dec = mem(r, "decisions.md").read_text(encoding="utf-8")
     new = [b.split("\n", 1) for b in re.split(r"^## ", dec, flags=re.M)[1:]]
     new = [(h, body.strip().split("\n")[0]) for h, body in new if (re.search(r"\((\d{4}-[^)]+)\)", h) or [None, ""])[1] > last]
@@ -1080,15 +1154,16 @@ def main():
     p = sub.add_parser("memory"); p.add_argument("action", choices=["resume", "checkpoint", "decide", "learn", "log"])
     p.add_argument("--task", default=""); p.add_argument("--next", default="")
     p.add_argument("--files", default=""); p.add_argument("--blockers", default="")
-    p.add_argument("--text", default=""); p.set_defaults(f=cmd_memory)
+    p.add_argument("--text", default=""); p.add_argument("--user-evidence", dest="user_evidence", default=""); p.set_defaults(f=cmd_memory)
     p = sub.add_parser("design"); p.add_argument("action", choices=["check"]); p.add_argument("--plans", action="store_true"); p.set_defaults(f=cmd_design)
     p = sub.add_parser("check"); p.add_argument("what", choices=["coverage", "premises", "plans"]); p.set_defaults(f=cmd_check)
     p = sub.add_parser("slice"); p.add_argument("action", choices=["start", "done"]); p.add_argument("id")
     p.add_argument("--evidence", default=""); p.set_defaults(f=cmd_slice)
-    p = sub.add_parser("client"); p.add_argument("action", choices=["ask", "list", "resolve", "sweep", "report"])
+    p = sub.add_parser("client"); p.add_argument("action", choices=["ask", "list", "resolve", "sweep", "report", "review"])
     p.add_argument("--kind", default="decision", choices=["decision", "deviation"]); p.add_argument("--what", default="")
     p.add_argument("--price", default=""); p.add_argument("--by", default=""); p.add_argument("--if-no-answer", dest="if_no_answer", default="")
-    p.add_argument("--id", type=int, default=0); p.add_argument("--answer", default=""); p.set_defaults(f=cmd_client)
+    p.add_argument("--id", type=int, default=0); p.add_argument("--answer", default="")
+    p.add_argument("--phase", default=""); p.add_argument("--document", default=""); p.add_argument("--report", default=""); p.set_defaults(f=cmd_client)
     p = sub.add_parser("rules"); p.add_argument("action", choices=["audit"]); p.add_argument("path", nargs="?", default=".")
     p.add_argument("--target", default="opencode", choices=["opencode", "claude", "agents"])
     p.add_argument("--budget", type=int, default=800); p.add_argument("--json", action="store_true"); p.set_defaults(f=cmd_rules)

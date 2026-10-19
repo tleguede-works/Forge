@@ -28,12 +28,12 @@ sed -i 's/,B3//' .forge/slices.md
 # premises: a deliverable depending on a withdrawn requirement
 python3 - <<'P'
 import os,sys;sys.path.insert(0,os.environ["CLIDIR"]);import forge;R=forge.find_root();s=forge.load(R)
-s["deliverables"]["conventions"]={"path":".forge/prd.md","phase":"bootstrap","hash":"x","requires":["B3"],"reviews":{}}
+s["deliverables"]["brief"]={"path":".forge/prd.md","phase":"bootstrap","hash":"x","requires":["B3"],"reviews":{}}
 forge.save(R,s)
 P
 fail $F check premises
 python3 - <<'P'
-import os,sys;sys.path.insert(0,os.environ["CLIDIR"]);import forge;R=forge.find_root();s=forge.load(R); s["deliverables"]["conventions"]["requires"]=["B1"]; forge.save(R,s)
+import os,sys;sys.path.insert(0,os.environ["CLIDIR"]);import forge;R=forge.find_root();s=forge.load(R); s["deliverables"]["brief"]["requires"]=["B1"]; forge.save(R,s)
 P
 ok $F check premises
 # plans

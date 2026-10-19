@@ -39,6 +39,8 @@ In client mode, record every question that needs the client with `forge client a
 
 Switch with `forge mode interactive|client --evidence "<the user's words>"`. Only the user changes the mode; you never switch it to gain `auto` approvals.
 
+**Touchpoint procedure (client mode, phases bootstrap, prd, design, validation).** Write a plain-language summary at `.forge/client/<phase>-summary.md`. Run the `forge-client-liaison` agent on it; it writes `.forge/reviews/<phase>.client.json` with its questions. Fix the summary, add a `resolution` to every question, then run `forge client review --phase <phase> --document .forge/client/<phase>-summary.md --report .forge/reviews/<phase>.client.json`. `forge gate approve` refuses without it, or when the summary changed after the review.
+
 At each phase end in client mode, run `forge client report`, write the client-facing report in the project language from its facts, and run the `forge-client-liaison` agent on it. Mode changes how you talk, never which checks run.
 
 ## Phase procedure
@@ -46,7 +48,7 @@ At each phase end in client mode, run `forge client report`, write the client-fa
 For the current phase:
 
 1. Run `forge status`. Read the `next:` line.
-2. Load the phase skill: landscape, prd and roadmap use `forge-discover`; design uses `forge-design`; architecture uses `forge-architect`; rules uses `forge-rules`; plans uses `forge-plan`; build and validation use `forge-build`. If that skill is not installed, stop (R9).
+2. Load the phase skill: bootstrap uses `forge-bootstrap`; landscape, prd and roadmap use `forge-discover`; design uses `forge-design`; architecture uses `forge-architect`; rules uses `forge-rules`; plans uses `forge-plan`; build and validation use `forge-build`. If that skill is not installed, stop (R9).
 3. Produce the deliverables in `.forge/`, then `forge register <name> <path>`.
 4. Launch the `forge-qa` and `forge-redteam` agents on each deliverable. Each writes a JSON report; record it with `forge review <name> --agent qa|redteam --report <file>`.
 5. Fix every blocking finding, re-register, and re-run both reviews. A changed file resets its reviews.

@@ -10,8 +10,8 @@ fail() { "$@" >/dev/null 2>&1 && { echo "FAIL (expected refusal): $*"; exit 1; }
 echo '{"findings":[]}' > clean.json
 ok $F init --name Adv --lang en
 ok $F phase start bootstrap
-echo contract > .forge/contract.md; echo conv > .forge/conventions.md
-ok $F register contract .forge/contract.md; ok $F register conventions .forge/conventions.md
+echo contract > .forge/contract.md; echo conv > .forge/brief.md
+ok $F register contract .forge/contract.md; ok $F register brief .forge/brief.md
 # 1. Hand-edit state.json to approve the phase
 python3 - <<'P'
 import json; s=json.load(open(".forge/state.json")); s["phases"]["bootstrap"]="approved"; json.dump(s,open(".forge/state.json","w"))
@@ -24,8 +24,8 @@ P
 git_restore; ok $F status                           # putting the original content back is valid (same as git checkout)
 # restore a clean state (simulates `git checkout`)
 rm -rf .forge AGENTS.md; ok $F init --name Adv --lang en; ok $F phase start bootstrap
-echo contract > .forge/contract.md; echo conv > .forge/conventions.md
-ok $F register contract .forge/contract.md; ok $F register conventions .forge/conventions.md
+echo contract > .forge/contract.md; echo conv > .forge/brief.md
+ok $F register contract .forge/contract.md; ok $F register brief .forge/brief.md
 # 2. Forged review report: dismissed finding with no reason, malformed severity
 echo '{"findings":[{"id":"A","severity":"critical","status":"dismissed","evidence":"x"}]}' > r1.json
 fail rv contract qa r1.json
@@ -33,9 +33,9 @@ echo '{"findings":[{"id":"A","severity":"blocker","status":"open","evidence":"x"
 fail rv contract qa r2.json
 echo '{"findings":"none"}' > r3.json; fail rv contract qa r3.json
 # 3. One reviewer only
-ok rv contract qa clean.json; ok rv conventions qa clean.json
+ok rv contract qa clean.json; ok rv brief qa clean.json
 fail $F gate check
-ok rv contract redteam clean.json; ok rv conventions redteam clean.json
+ok rv contract redteam clean.json; ok rv brief redteam clean.json
 ok $F gate check
 # 4. Register a file outside .forge, or via a traversal path
 echo x > outside.md; fail $F register contract outside.md; fail $F register contract ../outside.md
@@ -62,7 +62,7 @@ echo '{"findings":[]}' > elsewhere.json
 fail $F review contract --agent qa --report elsewhere.json
 # 12. Report file edited after it was recorded
 echo more >> .forge/contract.md; ok $F register contract .forge/contract.md
-ok rv contract qa clean.json; ok rv contract redteam clean.json; ok rv conventions qa clean.json; ok rv conventions redteam clean.json
+ok rv contract qa clean.json; ok rv contract redteam clean.json; ok rv brief qa clean.json; ok rv brief redteam clean.json
 ok $F gate check
 echo '{"findings":[],"note":"edited later"}' > .forge/reviews/contract.qa.json
 fail $F gate check
@@ -73,7 +73,10 @@ echo '{"findings":[{"id":"A","severity":"critical","status":"dismissed","evidenc
 fail rv contract qa d2.json
 ok $F memory decide --text "Finding A is out of scope: the client confirmed on 2026-10-18"
 echo '{"findings":[{"id":"A","severity":"critical","status":"dismissed","evidence":"x","reason":"D-001"}]}' > d3.json
-ok rv contract qa d3.json
+fail rv contract qa d3.json                       # a critical dismissal needs the user's own words in the decision
+ok $F memory decide --text "Finding A is out of scope" --user-evidence "Client wrote: skip finding A"
+echo '{"findings":[{"id":"A","severity":"critical","status":"dismissed","evidence":"x","reason":"D-002"}]}' > d4.json
+ok rv contract qa d4.json
 # 10. Placeholders
-echo "TODO later" > .forge/conventions.md; fail $F register conventions .forge/conventions.md
+echo "TODO later" > .forge/brief.md; fail $F register brief .forge/brief.md
 echo "ALL ADVERSARIAL PASS"

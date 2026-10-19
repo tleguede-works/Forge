@@ -15,11 +15,11 @@ echo x > .forge/prd.md
 fail $F register prd .forge/prd.md                 # premature artifact (no phase started)
 fail $F phase start landscape                      # order
 ok   $F phase start bootstrap
-echo contract > .forge/contract.md; echo conv > .forge/conventions.md
-ok $F register contract .forge/contract.md; ok $F register conventions .forge/conventions.md
+echo contract > .forge/contract.md; echo conv > .forge/brief.md
+ok $F register contract .forge/contract.md; ok $F register brief .forge/brief.md
 fail $F gate check                                 # no reviews
 fail rv contract qa bad.json   # blocking finding
-review_all contract; review_all conventions
+review_all contract; review_all brief
 ok   $F gate check
 fail $F gate approve                               # no evidence
 fail $F gate approve --evidence auto               # interactive mode forbids auto
@@ -32,8 +32,17 @@ ok $F register landscape .forge/landscape.md; review_all landscape
 ok $F mode client --evidence "the user asked for client mode"
 ok $F gate approve --evidence auto                 # landscape is not a client touchpoint
 ok $F phase start prd
-echo "P" > .forge/prd.md; ok $F register prd .forge/prd.md; review_all prd
+printf "## 3. Business rules\n- B1 rule\n" > .forge/prd.md; ok $F register prd .forge/prd.md; review_all prd
 fail $F gate approve --evidence auto               # prd is a touchpoint
+mkdir -p .forge/client; echo "Plain summary for the client" > .forge/client/prd-summary.md
+echo '{"questions":[{"where":"B1","question":"what is B1?"}]}' > .forge/reviews/prd.client.json
+fail $F gate approve --evidence "Yes, validated"                  # client mode: no liaison review yet
+fail $F client review --phase prd --document .forge/client/prd-summary.md --report .forge/reviews/prd.client.json   # question unresolved
+echo '{"questions":[{"where":"B1","question":"what is B1?","resolution":"explained in the summary"}]}' > .forge/reviews/prd.client.json
+ok $F client review --phase prd --document .forge/client/prd-summary.md --report .forge/reviews/prd.client.json
+echo "edited after review" >> .forge/client/prd-summary.md
+fail $F gate approve --evidence "Yes, validated"                  # summary changed after the review
+ok $F client review --phase prd --document .forge/client/prd-summary.md --report .forge/reviews/prd.client.json
 ok   $F gate approve --evidence "Yes, validated"
 echo "{{TOKEN}}" > .forge/roadmap.md; ok $F phase start roadmap
 fail $F register roadmap .forge/roadmap.md         # placeholder

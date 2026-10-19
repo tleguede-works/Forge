@@ -8,7 +8,7 @@ Status values: `to study`, `design written`, `implemented`.
 
 | Rank | Item | Why this rank | Effort | Depends on |
 |---|---|---|---|---|
-| 1 | I-006 Full audit | Cheap, and it finds defects that would corrupt every later test. Two real holes are already known (see the item) | Medium | none |
+| 1 | I-006 Full audit (first pass done: `docs/AUDIT-2026-10-19.md`) | Cheap, and it finds defects that would corrupt every later test. Two real holes are already known (see the item) | Medium | none |
 | 2 | I-004 Regulatory compliance (design discussion first) | It changes the phase list, so it must be decided before the end-to-end test; the demo target (banking) is a regulated sector | Medium, mostly design | I-006 findings |
 | 3 | I-005 End-to-end test: Togo mobile banking demo | Proves the system on a real case and supports the owner's business goal; it should exercise compliance, so it follows rank 2 | Medium | I-006, I-004; needs an environment with real sub-agents |
 | 4 | I-001 Verification before every commit | Well bounded, high value in the build phase, but the end-to-end test stops before the build, so it can wait | Medium | I-006 |
@@ -269,7 +269,7 @@ Validate Forge on a real case from the initial request to the end of the prepara
 
 ---
 
-## I-006 Full audit of the system and the repository (planned, not started)
+## I-006 Full audit of the system and the repository (first pass done, see `docs/AUDIT-2026-10-19.md`)
 
 ### Goal
 
@@ -283,7 +283,7 @@ An exhaustive end-to-end audit of files, instructions, agents, modules, referenc
 - A check of execution order for every component, including Forge, Forge Rules and the others. Example: the benchmark must come before the PRD. Look for other mis-positioned steps or modules.
 - Everything that needs reinforcement, and a coherent whole without gaps, contradictions or breaks in the process.
 
-### Already known (to confirm in the audit)
+### Suspected holes before the first pass (outcome in the audit report)
 
 | # | Suspicion | Basis |
 |---|---|---|

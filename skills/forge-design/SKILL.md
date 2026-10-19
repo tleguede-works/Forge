@@ -9,10 +9,10 @@ Write every deliverable in the project language. All files live in `.forge/desig
 
 ## Procedure
 
-1. **References** (`design-references`, `.forge/design/references.md`): three reference products with what is taken from each, three mood words, anti-references, the archetype and the core loop. If a design skill is installed, load it first. If none is installed, apply `references/hierarchy.md` alone; the CLI checks run the same way.
+1. **References** (`design-references`, `.forge/design/references.md`, from `references/design-references-template.md`): three reference products with what is taken from each, three mood words, anti-references, the archetype and the core loop. If a design skill is installed, load it first. If none is installed, apply `references/hierarchy.md` alone; the CLI checks run the same way.
 2. **Screen map** (`screen-map`, `.forge/design/screen-map.md`): one row per route and per role. Every admin page is its own row. A tab, a modal and a state are not screens; they are zones or states inside a screen.
-3. **Layouts** (`layouts`, `.forge/design/layouts.md`): one `LAY-` section per shell (visitor and auth, app with sidebar, app with bottom navigation, landing, wizard, full screen). List every region as `- region: <name>`, with its responsive behavior.
-4. **Design system** (`design-system`, `.forge/design/design-system.md`): tokens with concrete values (colors, type scale, spacing, radius), primitive components, navigation order. A token with no value is a defect.
+3. **Layouts** (`layouts`, `.forge/design/layouts.md`, from `references/layouts-template.md`): one `LAY-` section per shell (visitor and auth, app with sidebar, app with bottom navigation, landing, wizard, full screen). List every region as `- region: <name>`, with its responsive behavior.
+4. **Design system** (`design-system`, `.forge/design/design-system.md`, from `references/design-system-template.md`): tokens with concrete values (colors, type scale, spacing, radius), primitive components, navigation order. A token with no value is a defect.
 5. **Screens** (`screen:<id>`, `.forge/design/screens/<id>.md`): one file per screen-map row, built from `references/screen-template.md`. The anatomy is a ranked table. Choose the order with `references/hierarchy.md`; a pattern from that file is the starting order.
 6. Run `forge design check`. Fix every line it prints.
 7. Register every file, run `forge-qa` and `forge-redteam` on each, then `forge gate check` (see the `forge` skill). The gate runs the design check again and refuses an unregistered screen.

@@ -12,7 +12,7 @@ Deliverables: `plan:<Sxx>` for every slice (`.forge/plans/<Sxx>.md`), `plans-ind
 0. Read `.forge/rules-report.md` and the rule files it lists. Every plan follows them, and the test plan takes its gate commands from the project's `quality-gates.md`.
 1. For each row of `slices.md`, write `.forge/plans/<Sxx>.md` from `references/plan-template.md`.
 2. In every plan that builds a layout region, write the token `LAY-<name>/<region>` in the task that builds it. Foundation slices own these tasks.
-3. Write `.forge/plans/index.md`: one line per slice with its id, name and order of implementation.
+3. Write `.forge/plans/index.md` from `references/plans-index-template.md`: one line per slice with its id, name and order of implementation.
 4. Write `.forge/test-plan.md` from `references/test-plan-template.md`. Every business rule, edge case and validation (B, E, V IDs) appears in one or more test case rows, and every slice id appears.
 5. Register each file. Plans register as `plan:<Sxx>`.
 6. Run `forge check plans` and `forge design check --plans`. Fix every line they print.

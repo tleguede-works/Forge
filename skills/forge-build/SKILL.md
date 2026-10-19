@@ -20,7 +20,7 @@ For each slice in the order of `.forge/plans/index.md`:
 
 ## Phase 8: validation (deliverable `validation-report`, `.forge/validation-report.md`)
 
-1. Run the full test plan. Write one row per test case with its result.
+1. Run the full test plan. Write `.forge/validation-report.md` from `references/validation-report-template.md`, one row per test case with its result.
 2. List every deviation from the plans and the PRD, with its decision entry.
 3. Register the report, run the reviews, then the gate. Client mode: this phase is a touchpoint; show the client a plain-language acceptance summary.
 
