@@ -11,7 +11,7 @@ Producer agent: `forge-builder`. Reviewers: `forge-qa` and `forge-redteam`.
 
 For each slice in the order of `.forge/plans/index.md`:
 
-1. `forge slice start <Sxx>`. One slice runs at a time.
+1. `forge slice start <Sxx>`. One slice runs at a time. Read the rule files listed in `.forge/rules-report.md` before the first line of code.
 2. Read the plan. Write the failing tests for its `TC-` lines first.
 3. Implement the tasks in order. Tick each task in the plan file by changing `[ ]` to `[x]`.
 4. Run the slice tests and the regression set from the test plan.
@@ -30,4 +30,5 @@ For each slice in the order of `.forge/plans/index.md`:
 - **B2 Plan is the contract.** Build what the plan says. When the plan is wrong, stop (R9), tell the user, and use `forge phase reopen plans --reason ...` after the user agrees. In client mode, record the deviation with `forge client ask --kind deviation ...` and wait for the answer or its stated default. Never edit an approved plan to match the code.
 - **B3 No scope growth.** A feature absent from the PRD is not built. Propose it to the user; it enters through `forge phase reopen prd`.
 - **B4 Evidence is real.** `slice done` carries the actual test command and its result. A claim with no command is refused by the reviewers.
+- **B6 Rules are the contract.** The commands of the project's `quality-gates.md` are the commands you run before `forge slice done`, and the evidence names them. A change to a rule file goes through `forge phase reopen rules`.
 - **B5 Layout regions are built.** Every `LAY-x/region` token in a plan has a matching element in the code when its slice is done.

@@ -17,7 +17,7 @@ Each rule has an ID. Cite the ID when you refuse or stop.
 
 - **R1 Status first.** On every invocation, run `forge status` and act on its `next:` line. Never rely on conversation memory for the project position.
 - **R2 CLI only.** Change state with the `forge` CLI only. Never edit `.forge/state.json`, `.forge/memory/journal.md` or review hashes by hand.
-- **R3 Phase order.** Phases run in this order: bootstrap, landscape, prd, roadmap, design, architecture, plans, build, validation. The CLI refuses to start a phase before the previous one is approved, and refuses to register a deliverable outside its phase.
+- **R3 Phase order.** Phases run in this order: bootstrap, landscape, prd, roadmap, design, architecture, rules, plans, build, validation. The CLI refuses to start a phase before the previous one is approved, and refuses to register a deliverable outside its phase.
 - **R4 Two reviewers per deliverable.** Every deliverable is reviewed by the `forge-qa` agent (finds what is missing) and by the `forge-redteam` agent (finds contradictions and problems), each in its own context, never by the agent that wrote it. `forge gate` refuses a deliverable without both reviews on its current version.
 - **R5 No self-approval.** A phase is approved only with `forge gate approve --evidence "<the user's own words>"`. In client mode, phases outside the touchpoint list use `--evidence auto`. You never invent evidence.
 - **R6 Language.** Write every deliverable in the project language shown by `forge status` (`lang=`). Repository files and CLI output stay in English.
@@ -46,7 +46,7 @@ At each phase end in client mode, run `forge client report`, write the client-fa
 For the current phase:
 
 1. Run `forge status`. Read the `next:` line.
-2. Load the phase skill: landscape, prd and roadmap use `forge-discover`; design uses `forge-design`; architecture uses `forge-architect`; plans uses `forge-plan`; build and validation use `forge-build`. If that skill is not installed, stop (R9).
+2. Load the phase skill: landscape, prd and roadmap use `forge-discover`; design uses `forge-design`; architecture uses `forge-architect`; rules uses `forge-rules`; plans uses `forge-plan`; build and validation use `forge-build`. If that skill is not installed, stop (R9).
 3. Produce the deliverables in `.forge/`, then `forge register <name> <path>`.
 4. Launch the `forge-qa` and `forge-redteam` agents on each deliverable. Each writes a JSON report; record it with `forge review <name> --agent qa|redteam --report <file>`.
 5. Fix every blocking finding, re-register, and re-run both reviews. A changed file resets its reviews.

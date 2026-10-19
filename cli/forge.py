@@ -6,7 +6,7 @@ from pathlib import Path
 
 VERSION = 3
 PHASES = ["bootstrap", "landscape", "prd", "roadmap", "design",
-          "architecture", "plans", "build", "validation"]
+          "architecture", "rules", "plans", "build", "validation"]
 REQUIRED = {
     "bootstrap": ["contract", "conventions"],
     "landscape": ["landscape"],
@@ -14,6 +14,7 @@ REQUIRED = {
     "roadmap": ["roadmap"],
     "design": ["design-references", "screen-map", "layouts", "design-system"],
     "architecture": ["architecture", "slices"],
+    "rules": ["rules-report"],
     "plans": ["plans-index", "test-plan"],
     "build": [],
     "validation": ["validation-report"],
@@ -143,9 +144,11 @@ def drift(r, s):
         if s["phases"][d["phase"]] == "approved":
             p = r / d["path"]
             if not p.is_file():
-                out.append(f"{n}: approved deliverable is missing")
+                out.append((n, f"{n}: approved deliverable is missing", d["phase"]))
             elif sha(p) != d["hash"]:
-                out.append(f"{n}: changed after its phase was approved")
+                out.append((n, f"{n}: changed after its phase was approved", d["phase"]))
+    if s.get("rules") and s["phases"]["rules"] == "approved" and rules_hash(r) != s["rules"]["hash"]:
+        out.append(("rules", "rule files changed after the rules phase was approved", "rules"))
     return out
 
 
@@ -154,8 +157,8 @@ def cmd_status(a):
     kp = kit_problems()
     if kp:
         print("KIT MODIFIED: " + "; ".join(kp[:5]) + ". Reinstall Forge before approving anything")
-    for x in drift(r, s):
-        print(f"DRIFT: {x}. Run `forge phase reopen {s['deliverables'][x.split(':')[0]]['phase']} --reason ...` or restore the file")
+    for _, msg, ph in drift(r, s):
+        print(f"DRIFT: {msg}. Run `forge phase reopen {ph} --reason ...` or restore the file")
     cur = s["phase"]["current"]
     print(f"project={s['project']} lang={s['lang']} mode={s['mode']} phase={cur}")
     for p in PHASES:
@@ -196,7 +199,7 @@ def cmd_phase_start(a):
         die(f"phase {a.phase} is already {s['phases'][a.phase]}")
     dr = drift(r, s)
     if dr:
-        die("approved deliverables drifted: " + "; ".join(dr) + ". Reopen the phase or restore the files")
+        die("approved work drifted: " + "; ".join(m for _, m, _ in dr) + ". Reopen the phase or restore the files")
     s["phases"][a.phase] = "in_progress"; s["phase"]["current"] = a.phase
     save(r, s); journal(r, "phase_start", a.phase)
     write_now(r, f"Phase {a.phase} started", next_action(s), [], "")
@@ -274,6 +277,8 @@ def gate_problems(r, s, ph):
         out += premises_problems(r, s)
     if ph == "architecture":
         out += coverage_problems(r)
+    if ph == "rules":
+        out += rules_gate_problems(r, s)
     if ph == "plans":
         out += plans_problems(r, s)
     if ph == "build":
@@ -327,7 +332,11 @@ def cmd_gate(a):
     if a.evidence.strip().lower() == "auto":
         if s["mode"] != "client" or ph in TOUCHPOINTS:
             die(f"auto approval is allowed only in client mode, outside the touchpoint phases {TOUCHPOINTS}")
-    s["phases"][ph] = "approved"; save(r, s)
+    s["phases"][ph] = "approved"
+    if ph == "rules":
+        t_, b_ = rules_cfg(r, s)
+        s["rules"] = {"hash": rules_hash(r), "target": t_, "budget": b_}
+    save(r, s)
     journal(r, "gate_approved", f"{ph} evidence={a.evidence!r}")
     write_now(r, f"Phase {ph} approved", next_action(s), [], "")
     print(f"phase {ph} approved")
@@ -766,8 +775,7 @@ def stack_of(root):
     return sig
 
 
-def cmd_rules(a):
-    root = Path(a.path).resolve()
+def rules_checks(root, target, budget):
     rd, files, entry = rules_load(root)
     texts = {f: f.read_text(encoding="utf-8") for f in files}
     etext = entry.read_text(encoding="utf-8") if entry else ""
@@ -780,7 +788,7 @@ def cmd_rules(a):
 
     # 1 wiring
     off = []
-    if a.target == "opencode":
+    if target == "opencode":
         cfgf = next((root / c for c in ("opencode.json", "opencode.jsonc", ".opencode/opencode.json") if (root / c).is_file()), None)
         if not cfgf:
             off.append("no opencode.json: the rule set is inert")
@@ -799,7 +807,7 @@ def cmd_rules(a):
                     off.append(f"path '{pat}' does not exist")
             if entry and entry.name == "AGENTS.md" and ins and not any(i == "AGENTS.md" for i in ins):
                 off.append("AGENTS.md exists but is not loaded by 'instructions'")
-    elif a.target == "claude":
+    elif target == "claude":
         cm = root / "CLAUDE.md"
         if not cm.is_file():
             off.append("no CLAUDE.md")
@@ -905,10 +913,44 @@ def cmd_rules(a):
     # 10 budget
     tot = sum(len(tx.splitlines()) for _, tx in allt)
     off = [f"{rel(f)} has {len(tx.splitlines())} lines (ceiling 500)" for f, tx in texts.items() if len(tx.splitlines()) > 500]
-    if tot > a.budget:
-        off.append(f"total {tot} lines exceeds the budget {a.budget} (a target without scoping loads every file every session)")
+    if tot > budget:
+        off.append(f"total {tot} lines exceeds the budget {budget} (a target without scoping loads every file every session)")
     add("budget", off)
 
+    return res, tot
+
+
+RULES_TARGETS = ("opencode", "claude", "agents")
+
+
+def rules_hash(root):
+    rd, files, entry = rules_load(root)
+    h = hashlib.sha256()
+    for f in ([entry] if entry else []) + files:
+        txt = _noblock(f.read_text(encoding="utf-8")) if f == entry else f.read_text(encoding="utf-8")
+        h.update(str(f.relative_to(root)).encode() + b"\0" + txt.encode("utf-8"))
+    return h.hexdigest()[:16]
+
+
+def rules_cfg(root, s):
+    d = s["deliverables"].get("rules-report")
+    txt = (root / d["path"]).read_text(encoding="utf-8") if d else ""
+    t = re.search(r"^- target:\s*(\w+)", txt, re.M)
+    b = re.search(r"^- budget:\s*(\d+)", txt, re.M)
+    return (t.group(1) if t and t.group(1) in RULES_TARGETS else "opencode"), (int(b.group(1)) if b else 800)
+
+
+def rules_gate_problems(root, s):
+    if "rules-report" not in s["deliverables"]:
+        return []
+    target, budget = rules_cfg(root, s)
+    res, tot = rules_checks(root, target, budget)
+    return [f"rules audit ({target}, budget {budget}): {n}: {x}" for n, o in res for x in o[:5]]
+
+
+def cmd_rules(a):
+    root = Path(a.path).resolve()
+    res, tot = rules_checks(root, a.target, a.budget)
     bad = [(n, o) for n, o in res if o]
     if a.json:
         print(json.dumps({n: o for n, o in res}, indent=2))

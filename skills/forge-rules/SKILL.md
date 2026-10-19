@@ -1,6 +1,6 @@
 ---
 name: forge-rules
-description: Generates, consolidates or audits the AI coding-agent rule set of a project - an entry file (AGENTS.md or CLAUDE.md) plus scoped rule files, wired into OpenCode, Claude Code or AGENTS.md alone, built from a template library selected by the detected stack. Use when the user asks for project rules, coding standards for agents, AGENTS.md, CLAUDE.md, .cursor rules, or to audit existing instruction files. Runs after the architecture phase decides the stack, or at any time for an existing project.
+description: Generates, consolidates or audits the AI coding-agent rule set of a project - an entry file (AGENTS.md or CLAUDE.md) plus scoped rule files, wired into OpenCode, Claude Code or AGENTS.md alone, built from a template library selected by the detected stack. Use when forge status shows phase rules, or when the user asks for project rules, coding standards for agents, AGENTS.md, CLAUDE.md, .cursor rules, or to audit existing instruction files.
 ---
 
 # Forge Rules
@@ -23,6 +23,17 @@ Memory (journal, decisions, lessons) belongs to `forge-memory`. This skill never
 - **F10 No self-reference.** A generated file never names its source template, the profile it came from, or another project's files.
 
 The six design principles behind these rules are in `references/principles.md`. Read it once per session before drafting.
+
+## Inside Forge: the rules phase
+
+Phase `rules` runs after `architecture` (the stack is decided) and before `plans` (the plans and the test plan quote the gate commands). Deliverable: `rules-report` (`.forge/rules-report.md`), written in the project language. Producer agent: `forge-architect`. Reviewers: `forge-qa` and `forge-redteam`.
+
+1. Produce the rule set in the project root with the procedure below. The rule files stay in the project, outside `.forge/`.
+2. Write `.forge/rules-report.md` with these lines, in this form: `- target: opencode|claude|agents`, `- budget: <total lines>`, then the template selection with the signal behind each choice, the baseline status of each gate, and the verbatim output of `forge rules audit`.
+3. Register it, run both reviews, then `forge gate check`. The gate runs the same audit with the target and budget of the report and lists every failed check. Fix the rule files, not the report.
+4. On approval the CLI records a hash of the entry file (outside the Forge block) and of every rule file. A later edit to any of them is reported as `DRIFT` and blocks the next phase start until `forge phase reopen rules --reason ...` and a new gate.
+
+An existing project (adoption mode) uses the same phase; its baseline scan feeds the report.
 
 ## Procedure
 

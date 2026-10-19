@@ -12,7 +12,7 @@
 | Agents | 11, with QA and Red Team wired in only through Fast Track | 8; QA and Red Team are required by the CLI for every deliverable |
 | Review | prose instruction | hash-bound JSON reports, gate refuses without two current reviews |
 | Memory | context, session log, decisions, lessons plus findings in state | `NOW.md`, journal, decisions, lessons; hooks for compaction |
-| Rules generator | Project Rules Architect, Node audit | `forge-rules`, `forge rules audit` in Python |
+| Rules generator | Project Rules Architect, called from the main skill, Node audit | `forge-rules`, its own `rules` phase between architecture and plans, `forge rules audit` in Python run by the gate |
 
 ## Moving an existing v2 project
 

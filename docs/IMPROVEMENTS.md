@@ -30,6 +30,7 @@ These are ideas to deepen, not decisions. The study decides the mandatory checks
 | `forge slice done` with evidence `<command> : <result>` | CLI | Records test evidence per slice, not per commit |
 | Hash-bound review reports and two-reviewer gate | CLI, `forge-qa`, `forge-redteam` | Reusable pattern: a report bound to what was reviewed |
 | `forge rules audit` and the project's `quality-gates.md` | forge-rules | Defines the project's own gate commands (lint, types, tests, coverage, duplication, vulnerabilities, review) |
+| Rules phase (`rules-report`, gate runs the audit, drift protection) | CLI, forge-rules | Guarantees that `quality-gates.md` exists and passes the audit before the build starts |
 | `forge-rules` template `code-review.md` | forge-rules templates | Existing review rules a project can inherit, including "a reviewer never approves their own change" |
 | `forge-builder` agent | agents | The author whose work is checked |
 | Memory trigger 6 "before a commit" | forge-memory | Currently a conditional trigger, listed as J3 in `docs/ESCAPE-HATCH-AUDIT.md` |
