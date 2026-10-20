@@ -7,7 +7,7 @@ T=$(mktemp -d); cd "$T"
 ok()   { "$@" >/dev/null 2>&1 || { echo "FAIL (expected success): $*"; exit 1; }; }
 fail() { "$@" >/dev/null 2>&1 && { echo "FAIL (expected refusal): $*"; exit 1; }; true; }
 blocked() { out=$($F gate check 2>&1); echo "$out" | grep -q "$1" || { echo "FAIL: expected '$1' in the gate output:"; echo "$out"; exit 1; }; }
-rv() { mkdir -p .forge/reviews; echo '{"findings":[]}' > ".forge/reviews/${1//:/_}.$2.json"; $F review "$1" --agent "$2" --report ".forge/reviews/${1//:/_}.$2.json" >/dev/null; }
+rv() { $F review begin "$1" --agent "$2" >/dev/null 2>&1 || return 1; mkdir -p .forge/reviews; echo '{"findings":[]}' > ".forge/reviews/${1//:/_}.$2.json"; $F review record "$1" --agent "$2" --report ".forge/reviews/${1//:/_}.$2.json" >/dev/null; }
 doc() { $F template "$1" | sed 's/<fill>/sample text/' > "$2"; python3 - "$2" "${3:-}" "${4:-}" <<'P'
 import sys,re
 p,a,b=sys.argv[1:4]; t=open(p).read()

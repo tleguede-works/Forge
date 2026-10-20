@@ -14,13 +14,13 @@ echo '{"theme":"dark","hooks":{"Stop":[{"hooks":[{"type":"command","command":"ec
 ok env HOME=$FH FORGE_SRC=$ROOT sh $ROOT/install.sh
 ok env HOME=$FH FORGE_SRC=$ROOT sh $ROOT/install.sh          # twice: idempotent
 K="python3 $FH/.forge/cli/forge.py"
-here $FH/.forge/cli/forge.py; here $FH/.claude/skills/forge-compliance/SKILL.md; here $FH/.config/opencode/plugin/forge.ts
-has 'const FORGE = "forge"' $FH/.config/opencode/plugin/forge.ts
+here $FH/.forge/cli/forge.py; here $FH/.claude/skills/forge-compliance/SKILL.md; here $FH/.config/opencode/plugins/forge.js
+has 'const CLI = "'$FH'/.forge/cli/forge.py"' $FH/.config/opencode/plugins/forge.js
 python3 - "$FH" <<'P'
 import json,sys
 c=json.load(open(sys.argv[1]+"/.claude/settings.json"))
 n=sum("forge_hook" in h["command"] for g in c["hooks"].values() for x in g for h in x["hooks"])
-assert n==3 and c["theme"]=="dark" and "Stop" in c["hooks"], (n,c)
+assert n==4 and c["theme"]=="dark" and "Stop" in c["hooks"], (n,c)
 P
 ok $K kit verify
 echo "# tampered" >> $FH/.claude/skills/forge/SKILL.md; fail $K kit verify          # an installed copy was edited
@@ -31,8 +31,8 @@ $K status 2>&1 | grep -q "KIT MODIFIED" || { echo "FAIL: status does not report 
 $K phase start bootstrap >/dev/null 2>&1
 $K template contract | sed "s/<fill>/x text/" > .forge/contract.md; $K template brief | sed "s/<fill>/x text/" > .forge/brief.md
 $K register contract .forge/contract.md >/dev/null; $K register brief .forge/brief.md >/dev/null
-mkdir -p .forge/reviews; echo '{"findings":[]}' > .forge/reviews/contract.qa.json; for x in contract.redteam brief.qa brief.redteam; do cp .forge/reviews/contract.qa.json .forge/reviews/$x.json; done
-for n in contract brief; do for ag in qa redteam; do $K review $n --agent $ag --report .forge/reviews/$n.$ag.json >/dev/null; done; done
+mkdir -p .forge/reviews
+for n in contract brief; do for ag in qa redteam; do $K review begin $n --agent $ag >/dev/null; echo '{"findings":[]}' > .forge/reviews/$n.$ag.json; $K review record $n --agent $ag --report .forge/reviews/$n.$ag.json >/dev/null; done; done
 fail $K gate approve --evidence "approved"                                           # a modified kit cannot approve
 ok env HOME=$FH python3 $FH/.forge/scripts/install.py --uninstall
 gone $FH/.forge; gone $FH/.claude/skills/forge
@@ -45,14 +45,14 @@ ok env HOME=$FH2 FORGE_SRC=$ROOT sh $ROOT/install.sh --scope local --project $P
 ok env HOME=$FH2 FORGE_SRC=$ROOT sh $ROOT/install.sh --scope local --project $P          # twice
 gone $FH2/.forge; gone $FH2/.claude                                                       # nothing leaks into the home folder
 here $P/.forge/kit/cli/forge.py; here $P/.forge/bin/forge; here $P/.claude/skills/forge/SKILL.md; here $P/.claude/agents/forge.md
-here $P/.opencode/skills/forge-rules/SKILL.md; here $P/.opencode/agents/forge-qa.md; here $P/.opencode/plugin/forge.ts
+here $P/.opencode/skills/forge-rules/SKILL.md; here $P/.opencode/agents/forge-qa.md; here $P/.opencode/plugins/forge.js
 has 'CLAUDE_PROJECT_DIR' $P/.claude/settings.json; has '"Bash(ls)"' $P/.claude/settings.json
-has 'const FORGE = ".forge/bin/forge"' $P/.opencode/plugin/forge.ts
+has 'const CLI = ".forge/kit/cli/forge.py"' $P/.opencode/plugins/forge.js
 python3 - "$P" <<'P'
 import json,sys
 c=json.load(open(sys.argv[1]+"/.claude/settings.json"))
 n=sum("forge_hook" in h["command"] for g in c["hooks"].values() for x in g for h in x["hooks"])
-assert n==3 and "$HOME" not in json.dumps(c) and "/tmp" not in json.dumps(c["hooks"]), c   # portable: no machine path
+assert n==4 and "$HOME" not in json.dumps(c) and "/tmp" not in json.dumps(c["hooks"]), c   # portable: no machine path
 P
 cd $P
 ok env HOME=$FH2 .forge/bin/forge init --name L --lang en
@@ -62,7 +62,7 @@ echo '{"cwd":"'$P'"}' | python3 .forge/kit/hooks/forge_hook.py session-start | g
 echo "# tampered" >> .claude/skills/forge/SKILL.md; fail .forge/bin/forge kit verify
 ok env HOME=$FH2 FORGE_SRC=$ROOT sh $ROOT/install.sh --scope local --project $P; ok .forge/bin/forge kit verify
 ok env HOME=$FH2 python3 .forge/kit/scripts/install.py --uninstall --scope local --project $P
-gone .forge/kit; gone .forge/bin; gone .claude/skills/forge; gone .opencode/plugin/forge.ts; here .forge/state.json; here AGENTS.md
+gone .forge/kit; gone .forge/bin; gone .claude/skills/forge; gone .opencode/plugins/forge.js; here .forge/state.json; here AGENTS.md
 python3 -c "import json;c=json.load(open('.claude/settings.json'));assert c=={'permissions':{'allow':['Bash(ls)']}},c"
 
 echo "--- both scopes present: the scope must be named ---"

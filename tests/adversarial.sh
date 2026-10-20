@@ -3,6 +3,7 @@
 set -u
 CLIDIR="$(cd "$(dirname "$0")/.." && pwd)/cli"; export CLIDIR
 F="python3 $CLIDIR/forge.py"
+bump() { echo "- touch" >> .forge/contract.md; $F register contract .forge/contract.md >/dev/null; }
 doc() { $F template "$1" | sed 's/<fill>/sample text/' > "$2"; python3 - "$2" "${3:-}" "${4:-}" <<'P'
 import sys,re
 p,a,b=sys.argv[1:4]; t=open(p).read()
@@ -11,7 +12,7 @@ if b: t=t.rstrip("\n")+"\n"+b.replace("\\n","\n")+"\n"
 open(p,"w").write(t)
 P
 }
-rv() { mkdir -p .forge/reviews; cp "$3" ".forge/reviews/${1//:/_}.$2.json"; $F review "$1" --agent "$2" --report ".forge/reviews/${1//:/_}.$2.json"; }
+rv() { $F review begin "$1" --agent "$2" >/dev/null 2>&1 || return 1; mkdir -p .forge/reviews; cp "$3" ".forge/reviews/${1//:/_}.$2.json"; $F review record "$1" --agent "$2" --report ".forge/reviews/${1//:/_}.$2.json"; }
 T=$(mktemp -d); cd "$T"
 ok()   { "$@" >/dev/null 2>&1 || { echo "FAIL (expected success): $*"; exit 1; }; }
 fail() { "$@" >/dev/null 2>&1 && { echo "FAIL (expected refusal): $*"; exit 1; }; true; }
@@ -40,7 +41,8 @@ fail rv contract qa r1.json
 echo '{"findings":[{"id":"A","severity":"blocker","status":"open","evidence":"x"}]}' > r2.json
 fail rv contract qa r2.json
 echo '{"findings":"none"}' > r3.json; fail rv contract qa r3.json
-# 3. One reviewer only
+# 3. One reviewer only (the malformed attempts above used the launches of that version: a changed version is needed)
+bump
 ok rv contract qa clean.json; ok rv brief qa clean.json
 fail $F gate check
 ok rv contract redteam clean.json; ok rv brief redteam clean.json
@@ -67,24 +69,24 @@ ok $F register contract .forge/contract.md
 # 11. Mode switch without the user's words, and reviews not written at the contract path
 fail $F mode client
 echo '{"findings":[]}' > elsewhere.json
-fail $F review contract --agent qa --report elsewhere.json
+fail $F review record contract --agent qa --report elsewhere.json
 # 12. Report file edited after it was recorded
 echo more >> .forge/contract.md; ok $F register contract .forge/contract.md
-ok rv contract qa clean.json; ok rv contract redteam clean.json; ok rv brief qa clean.json; ok rv brief redteam clean.json
+ok rv contract qa clean.json; ok rv contract redteam clean.json
 ok $F gate check
 echo '{"findings":[],"note":"edited later"}' > .forge/reviews/contract.qa.json
 fail $F gate check
 # 13. Dismissing a finding needs a real decision entry
 echo '{"findings":[{"id":"A","severity":"critical","status":"dismissed","evidence":"x","reason":"not important"}]}' > d1.json
-fail rv contract qa d1.json
+bump; fail rv contract qa d1.json
 echo '{"findings":[{"id":"A","severity":"critical","status":"dismissed","evidence":"x","reason":"D-099"}]}' > d2.json
-fail rv contract qa d2.json
+bump; fail rv contract qa d2.json
 ok $F memory decide --text "Finding A is out of scope: the client confirmed on 2026-10-18"
 echo '{"findings":[{"id":"A","severity":"critical","status":"dismissed","evidence":"x","reason":"D-001"}]}' > d3.json
-fail rv contract qa d3.json                       # a critical dismissal needs the user's own words in the decision
+bump; fail rv contract qa d3.json                       # a critical dismissal needs the user's own words in the decision
 ok $F memory decide --text "Finding A is out of scope" --user-evidence "Client wrote: skip finding A"
 echo '{"findings":[{"id":"A","severity":"critical","status":"dismissed","evidence":"x","reason":"D-002"}]}' > d4.json
-ok rv contract qa d4.json
+bump; ok rv contract qa d4.json
 # 10. Placeholders
 echo "TODO later" > .forge/brief.md; fail $F register brief .forge/brief.md
 echo "ALL ADVERSARIAL PASS"

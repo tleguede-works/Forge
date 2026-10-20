@@ -312,6 +312,37 @@ An exhaustive end-to-end audit of files, instructions, agents, modules, referenc
 
 ---
 
+## I-007 Resume a project started with Forge v2 (to study)
+
+### Goal
+
+Continue a client project that was started with the older Forge, from where it stands, using its `.forge` folder: reuse the answers the owner already gave instead of asking again, and complete the skipped steps properly.
+
+### What the owner asked for
+
+- Resume from the existing `.forge`, without installing the new version in that project.
+- Exploit what the folder already holds; do not restart questions that were answered.
+- Avoid the loop seen at Bootstrap (see `docs/LOOPS.md`).
+
+### Facts and gaps
+
+- The project folder, the prompt used and the loop transcript were not available when the loops were analysed. The causes in `docs/LOOPS.md` come from the instructions, not from the log.
+- `docs/MIGRATION-v2.md` says there is no automatic migration, because v2 approvals cannot be trusted. That conflicts with the wish not to ask again; the study has to separate answers (reusable) from approvals (not reusable).
+
+### Questions
+
+1. Which v2 files carry the owner's answers (brief, contract, decisions, state)? What does each map to in the v3 deliverables?
+2. Should an import command (`forge import-v2`) copy the answers into the brief and decisions with their source, and mark the rest as open questions?
+3. Which v2 approvals can be carried over safely, if any, and what must be re-reviewed?
+4. How does a resumed project show the owner what was reused and what is still missing, in one message?
+5. Can the same flow serve a v3 project whose state was lost?
+
+### What is needed to start
+
+A copy of the project's `.forge` folder with client data removed, the prompt that was used to resume, and the last part of the loop transcript (the text of the last two or three cycles).
+
+---
+
 ## Other improvements to study
 
 None recorded yet. Add each new item below with the same structure: goal, request, existing building blocks, questions, expected output.

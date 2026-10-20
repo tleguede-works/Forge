@@ -38,7 +38,7 @@ $F status | grep -q "forge slice start S01" || { echo "FAIL: build next action d
 # 3. PRD ids: unique, never reused
 D=$(mktemp -d); cd $D; ok $F init --name P
 mut 's["phases"]["bootstrap"]="approved"; s["phases"]["landscape"]="approved"; s["phases"]["compliance"]="approved"; s["phases"]["prd"]="in_progress"; s["phase"]["current"]="prd"'
-rv() { mkdir -p .forge/reviews; echo '{"findings":[]}' > ".forge/reviews/$1.$2.json"; $F review "$1" --agent "$2" --report ".forge/reviews/$1.$2.json"; }
+rv() { $F review begin "$1" --agent "$2" >/dev/null 2>&1 || return 1; mkdir -p .forge/reviews; echo '{"findings":[]}' > ".forge/reviews/$1.$2.json"; $F review record "$1" --agent "$2" --report ".forge/reviews/$1.$2.json"; }
 doc prd .forge/prd.md "- B1 first\n- B1 second"
 ok $F register prd .forge/prd.md; rv prd qa >/dev/null; rv prd redteam >/dev/null
 fail $F gate check                                          # duplicated id

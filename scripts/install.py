@@ -53,7 +53,8 @@ class Scope:
         else:
             pre = f'"{sys.executable}" "{self.kit / "hooks" / "forge_hook.py"}"'
         return {ev: f"{pre} {arg}" for ev, arg in
-                (("SessionStart", "session-start"), ("PreCompact", "pre-compact"), ("PostToolUse", "post-tool"))}
+                (("SessionStart", "session-start"), ("PreCompact", "pre-compact"),
+                 ("PreToolUse", "pre-task"), ("PostToolUse", "post-tool"))}
 
     def rel(self, p):
         return str(p.relative_to(self.project)).replace("\\", "/") if self.kind == "local" else str(p)
@@ -87,6 +88,8 @@ def edit_claude_settings(sc, add):
             group = {"hooks": [{"type": "command", "command": cmd}]}
             if ev == "PostToolUse":
                 group["matcher"] = "Write|Edit|MultiEdit"
+            if ev == "PreToolUse":
+                group["matcher"] = "Task"
             cfg.setdefault("hooks", {}).setdefault(ev, []).append(group)
     if not add and not cfg and not existed:
         return
@@ -186,10 +189,16 @@ def install(sc, src, target):
             settings_created = edit_claude_settings(sc, True)
             log("claude: skills, agents and hooks installed (hooks merged into settings.json)")
         else:
-            (base / "plugin").mkdir(parents=True, exist_ok=True)
-            plug = base / "plugin" / "forge.ts"
-            txt = (sc.kit / "hooks" / "opencode-forge.ts").read_text(encoding="utf-8")
-            txt = txt.replace('const FORGE = "forge"', "const FORGE = " + json.dumps(sc.cmd))
+            (base / "plugins").mkdir(parents=True, exist_ok=True)
+            old = base / "plugin" / "forge.ts"          # location and file of earlier installs
+            if old.exists():
+                old.unlink()
+            plug = base / "plugins" / "forge.js"
+            txt = (sc.kit / "hooks" / "opencode-forge.js").read_text(encoding="utf-8")
+            py = sys.executable if sc.kind == "global" else ("python" if WIN else "python3")
+            cli_path = str(sc.kit / "cli" / "forge.py") if sc.kind == "global" else ".forge/kit/cli/forge.py"
+            txt = txt.replace('const PYTHON = "python3"', "const PYTHON = " + json.dumps(py))
+            txt = txt.replace('const CLI = ".forge/kit/cli/forge.py"', "const CLI = " + json.dumps(cli_path))
             plug.write_text(txt, encoding="utf-8")
             created.append(str(plug)); installed.append(str(plug))
             log("opencode: skills, agents and plugin installed")
@@ -224,7 +233,7 @@ def uninstall(sc):
         if "claude" in m["targets"] and sc.settings.exists():
             edit_claude_settings(sc, False)
         for d in [sc.claude / "skills", sc.claude / "agents", sc.opencode / "skills", sc.opencode / "agents",
-                  sc.opencode / "plugin", sc.bin]:
+                  sc.opencode / "plugin", sc.opencode / "plugins", sc.bin]:
             if d.is_dir() and not any(d.iterdir()):
                 d.rmdir()
         for d in (sc.claude, sc.opencode):

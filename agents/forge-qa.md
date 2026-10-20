@@ -21,7 +21,15 @@ The delegation header, the deliverable, and the earlier approved deliverables it
 Write one file, `.forge/reviews/<deliverable>.qa.json` (replace `:` with `_` in the deliverable name):
 
 ```
-{"findings":[{"id":"QA-1","severity":"critical|major|minor","status":"open","evidence":"<quote or location>","fix":"<what to add>"}]}
+{"findings":[{"id":"QA-1","severity":"critical|major|minor","status":"open","needs":"producer|user","evidence":"<quote or location>","fix":"<what to add>"}]}
 ```
 
 Severity: `critical` means the next phase cannot start safely; `major` means a real gap; `minor` is cosmetic. An empty findings list is allowed only after you checked every item of the checklist.
+
+## Rules of a review
+
+- You run once and stop after writing the report. You never launch another agent.
+- An empty findings list is a valid result when every item of the checklist passes. Never invent a finding to have something to report.
+- If `.forge/reviews/<deliverable>.<agent>.prev.json` exists, read it first. Do not reopen a finding it marks `resolved` or `dismissed` unless the deliverable now contradicts that resolution.
+- Mark a finding `"needs":"user"` when the answer exists nowhere in the project and only the user can give it. Mark it `"needs":"producer"` (or leave `needs` out) when the author can fix it from the project files.
+- If an input you need is missing, report one finding with `"needs":"user"` naming it, and stop. Do not search the project again and again.

@@ -24,6 +24,9 @@ PREFIX_PHASE = {"screen:": "design", "plan:": "plans"}  # multi-instance deliver
 REVIEWERS = ("qa", "redteam")
 TOUCHPOINTS = ("bootstrap", "compliance", "prd", "roadmap", "design", "validation")  # client-mode phases that need the client
 BLOCKING = ("critical", "major")
+LOOP_LIMIT = 5    # identical failures of one operation before the CLI stops it
+MAX_ROUNDS = 3    # review rounds that ended with blocking findings before escalation to the user
+MAX_LAUNCHES = 2  # launches of one reviewer on one version without a usable report
 BEGIN, END = "<!-- forge:start v3 -->", "<!-- forge:end -->"
 BANNED = [r"\bif possible\b", r"\bideally\b", r"\bpreferably\b", r"\bgenerally\b", r"\bnormally\b",
           r"\bat a minimum\b", r"\bat least\b", r"\bshould\b", r"\bmay\b", r"\bmight\b",
@@ -35,6 +38,10 @@ BANNED = [r"\bif possible\b", r"\bideally\b", r"\bpreferably\b", r"\bgenerally\b
 def die(msg, code=1):
     print(f"forge: {msg}", file=sys.stderr)
     sys.exit(code)
+
+
+def needs_user(msg):
+    die("NEEDS-USER: " + msg + " Ask the user now. Do not retry and do not delegate this.")
 
 
 def now():
@@ -221,6 +228,8 @@ def cmd_status(a):
     print(f"project={s['project']} lang={s['lang']} mode={s['mode']} phase={cur}")
     for p in PHASES:
         print(f"  {p:<13}{s['phases'][p]}")
+    for k, v in s.get("stuck", {}).items():
+        print(f"STUCK: {k} {v['reason']} (forge attempts, then forge unstick {k} ...)")
     n = len(s.get("client", {}).get("pending", []))
     if n:
         print(f"client points pending: {n} (forge client list)")
@@ -251,7 +260,7 @@ def next_action(s, r=None):
 def cmd_mode(a):
     r = need_root(); s = load(r)
     if len((a.evidence or "").strip()) < 3:
-        die("changing the mode needs --evidence with the user's own words asking for it")
+        needs_user("changing the mode needs --evidence with the user's own words asking for it.")
     s["mode"] = a.value; save(r, s)
     journal(r, "mode", f"{a.value} evidence={a.evidence!r}"); print("mode =", a.value)
 
@@ -294,14 +303,65 @@ def cmd_register(a):
     entry = {"path": str(p.relative_to(r)), "phase": ph, "hash": h,
              "requires": sorted(set(a.requires.split(","))) if a.requires else [],
              "reviews": {}}
+    if old:
+        entry["rounds"] = old.get("rounds", [])
     if old and old["hash"] == h:
         entry["reviews"] = old["reviews"]
+        entry["pending"] = old.get("pending", {})
     s["deliverables"][a.name] = entry
     save(r, s); journal(r, "register", f"{a.name} {h}")
     print(f"registered {a.name} hash={h}" + (" (reviews reset)" if old and old["hash"] != h else ""))
 
 
-def cmd_review(a):
+def stuck_message(key, st):
+    head = "ESCALATE" if st.get("kind") == "rounds" else "STUCK"
+    return (f"{head}: '{key}' {st['reason']}. Stop repeating it.\n"
+            "  1. Run `forge attempts` and read what was tried and what came back each time.\n"
+            "  2. Write the likely cause: what is blocking, what you assumed, what the results had in common.\n"
+            "  3. If the cause is missing information, ask the user in one message. Do not search or delegate again.\n"
+            f"  4. Run `forge unstick {key} --analysis \"...\" (--new-approach \"what will change\" | --user-answer \"the user's words\")`.")
+
+
+def cmd_review_begin(a):
+    r = need_root(); s = load(r)
+    d = s["deliverables"].get(a.name) or die(f"'{a.name}' is not registered")
+    if sha(r / d["path"]) != d["hash"]:
+        die("stale: the file changed since registration; run `forge register` again")
+    rkey = f"rounds:{a.name}"
+    if rkey in s.get("stuck", {}):
+        print(stuck_message(rkey, s["stuck"][rkey]), file=sys.stderr); sys.exit(3)
+    rv = d["reviews"].get(a.agent)
+    if rv and rv["hash"] == d["hash"]:
+        die(f"{a.agent} already reviewed this exact version ({rv['verdict']}). Launching it again adds nothing. "
+            "Change the deliverable to fix a finding, or dismiss a wrong finding with a recorded decision.")
+    seen = {x["hash"] for x in d.get("rounds", [])}
+    blocked = {x["hash"] for x in d.get("rounds", []) if x["blocking"] > 0}
+    if len(blocked) >= MAX_ROUNDS and d["hash"] not in seen:
+        s.setdefault("stuck", {})[rkey] = {"kind": "rounds", "since": now(),
+            "reason": f"went through {len(blocked)} review rounds that each ended with blocking findings"}
+        save(r, s); journal(r, "escalate", f"{a.name}: {len(blocked)} blocked review rounds")
+        print(stuck_message(rkey, s["stuck"][rkey]), file=sys.stderr); sys.exit(3)
+    pend = d.setdefault("pending", {}).get(a.agent)
+    if pend and pend["hash"] == d["hash"]:
+        if pend["launches"] >= MAX_LAUNCHES:
+            die(f"{a.agent} was launched {pend['launches']} times on this version and no usable report was recorded. "
+                "Stop launching it: read the last report and the errors, find why it is unusable, ask the user if input is missing.")
+        pend["launches"] += 1
+    else:
+        pend = d["pending"][a.agent] = {"hash": d["hash"], "launches": 1}
+    pend["t"] = datetime.now(timezone.utc).timestamp()
+    rd = r / ".forge" / "reviews"; rd.mkdir(parents=True, exist_ok=True)
+    base = a.name.replace(":", "_") + "." + a.agent
+    if (rd / (base + ".json")).is_file():
+        (rd / (base + ".prev.json")).write_bytes((rd / (base + ".json")).read_bytes())
+        (rd / (base + ".json")).unlink()
+    save(r, s); journal(r, "review_begin", f"{a.name} {a.agent} launch {pend['launches']}")
+    print(f"review of {a.name} by {a.agent} started (launch {pend['launches']} of {MAX_LAUNCHES} allowed on this version).")
+    print(f"Launch the reviewer ONCE. It writes .forge/reviews/{base}.json" + (f" and may read {base}.prev.json, its previous report." if (rd / (base + ".prev.json")).is_file() else "."))
+    print(f"Then: forge review record {a.name} --agent {a.agent} --report .forge/reviews/{base}.json")
+
+
+def cmd_review_record(a):
     r = need_root(); s = load(r)
     d = s["deliverables"].get(a.name) or die(f"'{a.name}' is not registered")
     if sha(r / d["path"]) != d["hash"]:
@@ -309,6 +369,11 @@ def cmd_review(a):
     exp = r / ".forge" / "reviews" / (a.name.replace(":", "_") + "." + a.agent + ".json")
     if Path(a.report).resolve() != exp.resolve() or not exp.is_file():
         die(f"the report must be the file {exp.relative_to(r)} written by the reviewing agent")
+    pend = d.get("pending", {}).get(a.agent)
+    if not pend or pend["hash"] != d["hash"]:
+        die("no review was started for this version: run `forge review begin` first, launch the reviewer once, then record its report")
+    if exp.stat().st_mtime < pend["t"] - 1:
+        die("the report is older than the launch: the reviewer wrote no new report. Do not record an old one")
     rep = json.loads(exp.read_text(encoding="utf-8"))
     findings = rep.get("findings")
     if not isinstance(findings, list):
@@ -322,6 +387,8 @@ def cmd_review(a):
             die(f"bad severity in {f['id']}")
         if f["status"] not in ("open", "resolved", "dismissed"):
             die(f"bad status in {f['id']}")
+        if f.get("needs", "producer") not in ("producer", "user"):
+            die(f"bad 'needs' in {f['id']} (producer or user)")
         if f["status"] == "dismissed":
             m = re.search(r"\bD-\d+\b", f.get("reason", ""))
             dec = mem(r, "decisions.md").read_text(encoding="utf-8")
@@ -329,14 +396,19 @@ def cmd_review(a):
                 die(f"{f['id']}: a dismissed finding must cite a recorded decision (reason 'D-<n>' created with forge memory decide)")
             blk = dec.split(f"## {m.group(0)} ", 1)[1].split("\n## ", 1)[0]
             if f["severity"] in BLOCKING and not re.search(r"^user-evidence:\s*\S{3,}", blk, re.M):
-                die(f"{f['id']}: dismissing a {f['severity']} finding needs a decision recorded with --user-evidence (the user's own words)")
+                needs_user(f"{f['id']}: dismissing a {f['severity']} finding needs a decision recorded with --user-evidence (the user's own words).")
         if f["status"] == "open" and f["severity"] in BLOCKING:
             blocking += 1
     verdict = "ok" if blocking == 0 else "blocked"
+    d["pending"].pop(a.agent, None)
+    d.setdefault("rounds", []).append({"hash": d["hash"], "agent": a.agent, "blocking": blocking})
     d["reviews"][a.agent] = {"hash": d["hash"], "verdict": verdict, "findings": len(findings),
                              "blocking": blocking, "report": str(exp.relative_to(r)), "report_hash": sha(exp)}
     save(r, s); journal(r, "review", f"{a.name} {a.agent} {verdict} blocking={blocking}")
     print(f"{a.agent} review of {a.name}: {verdict} (blocking={blocking})")
+    for f in findings:
+        if f["status"] == "open" and f.get("needs") == "user":
+            print(f"NEEDS-USER: {f['id']}: only the user can settle this. Ask in one message: {str(f['evidence'])[:160]}")
     sys.exit(0 if verdict == "ok" else 1)
 
 
@@ -410,7 +482,7 @@ def cmd_gate(a):
     if a.action == "check":
         print(f"GATE {ph}: all mechanical checks pass; user approval still required"); return
     if not a.evidence or len(a.evidence.strip()) < 2:
-        die("approve needs --evidence with the user's own approval words")
+        needs_user("approve needs --evidence with the user's own approval words.")
     kp = kit_problems()
     if kp:
         die("the installed Forge kit was modified (" + "; ".join(kp[:3]) + "); reinstall before approving")
@@ -442,6 +514,7 @@ def cmd_gate(a):
 # ---------------------------------------------------------------- memory
 def write_now(root, task, nxt, files, blockers):
     (root / ".forge" / "memory" / ".edits").unlink(missing_ok=True)
+    (root / ".forge" / "memory" / ".filecounts.json").unlink(missing_ok=True)
     mem(root, "NOW.md").write_text(
         f"# NOW (overwritten at every checkpoint)\n\n- updated: {now()}\n"
         f"- task: {task}\n- next action: {nxt}\n"
@@ -787,7 +860,7 @@ def cmd_reopen(a):
         s["phases"][p] = "pending"
     for d in s["deliverables"].values():
         if PHASES.index(d["phase"]) > i:
-            d["reviews"] = {}
+            d["reviews"], d["pending"], d["rounds"] = {}, {}, []
     s["phases"][a.phase] = "in_progress"; s["phase"]["current"] = a.phase
     save(r, s)
     with mem(r, "decisions.md").open("a", encoding="utf-8") as f:
@@ -1250,9 +1323,9 @@ def compliance_problems(root):
         except ValueError:
             out.append(f"{o}: retrieved must be a date YYYY-MM-DD")
         if r["legal_review"] == "required":
-            out.append(f"{o}: legal review is required and not done")
+            out.append(f"NEEDS-USER: {o}: legal review is required and not done; ask the owner to choose done or risk-accepted")
         if (r["applicability"] == "not-applicable" or r["legal_review"] in ("done", "risk-accepted")) and not decision_user_evidence(root, r["decision"]):
-            out.append(f"{o}: needs a decision (D-<n>) recorded with --user-evidence")
+            out.append(f"NEEDS-USER: {o}: needs a decision (D-<n>) recorded with --user-evidence")
     for m in cfg["markets"]:
         if not any(m.lower() in r["jurisdiction"].lower() for r in rows):
             out.append(f"market {m} has no obligation row")
@@ -1293,6 +1366,109 @@ def cmd_compliance(a):
     s.setdefault("compliance", {"rechecks": {}})["rechecks"][a.phase] = {"register_hash": d["hash"], "evidence": a.evidence, "at": now()}
     save(r, s); journal(r, "compliance_recheck", f"{a.phase}: {a.evidence}")
     print(f"compliance recheck recorded for {a.phase}")
+
+
+# ---------------------------------------------------------------- loop guard
+def op_key(a, r):
+    c = a.cmd
+    if c == "gate":
+        return f"gate:{a.action}:{load(r)['phase']['current']}"
+    if c == "review":
+        return f"review-{a.rsub}:{a.name}:{a.agent}"
+    if c == "register":
+        return f"register:{a.name}"
+    if c == "slice":
+        return f"slice:{a.action}:{a.id}"
+    if c == "design":
+        return f"design:{a.action}:{'plans' if a.plans else 'screens'}"
+    if c == "check":
+        return f"check:{a.what}"
+    if c == "rules":
+        return "rules:audit"
+    if c == "phase":
+        return f"phase:{a.sub}:{a.phase}"
+    if c == "compliance":
+        return f"compliance:{a.phase}"
+    if c == "client" and a.action == "review":
+        return f"client-review:{a.phase}"
+    return None
+
+
+class _Tee:
+    def __init__(self, real, parts):
+        self.real, self.parts = real, parts
+
+    def write(self, text):
+        self.parts.append(text)
+        return self.real.write(text)
+
+    def flush(self):
+        self.real.flush()
+
+    def __getattr__(self, name):
+        return getattr(self.real, name)
+
+
+def record_attempt(r, key, code, text):
+    s = load(r)
+    at = s.setdefault("attempts", {})
+    if code == 0:
+        if key in at:
+            del at[key]
+            save(r, s)
+        return
+    fp = hashlib.sha256(text.strip()[:2000].encode("utf-8")).hexdigest()[:16]
+    e = at.get(key)
+    e = {"fp": fp, "count": e["count"] + 1} if e and e["fp"] == fp else {"fp": fp, "count": 1}
+    e["last"], e["at"] = text.strip()[:400], now()
+    at[key] = e
+    if e["count"] >= LOOP_LIMIT and key not in s.get("stuck", {}):
+        s.setdefault("stuck", {})[key] = {"kind": "repeat", "since": now(), "reason": f"failed {e['count']} times in a row with the same result"}
+        save(r, s); journal(r, "stuck", f"{key} x{e['count']}")
+        print(stuck_message(key, s["stuck"][key]), file=sys.stderr)
+        return
+    save(r, s)
+
+
+def cmd_attempts(a):
+    r = need_root(); s = load(r)
+    at, st = s.get("attempts", {}), s.get("stuck", {})
+    if not at and not st:
+        print("no failing operation is being counted"); return
+    for k in sorted(set(at) | set(st)):
+        e = at.get(k, {})
+        flag = "STUCK " if k in st else ""
+        print(f"{flag}{k}: {e.get('count', 0)} identical failure(s), limit {LOOP_LIMIT}" + (f" | {st[k]['reason']}" if k in st else ""))
+        if e.get("last"):
+            print("    last result: " + " ".join(e["last"].split())[:300])
+        if st.get(k, {}).get("kind") == "rounds":
+            nm = k.split(":", 1)[1]
+            for x in s["deliverables"].get(nm, {}).get("rounds", []):
+                print(f"    round: {x['agent']} on {x['hash']}: {x['blocking']} blocking")
+
+
+def cmd_unstick(a):
+    r = need_root(); s = load(r)
+    st = s.get("stuck", {}).get(a.key) or die(f"'{a.key}' is not stuck (forge attempts lists the stuck operations)")
+    if len((a.analysis or "").strip()) < 120:
+        die("--analysis must explain the likely cause: what blocks, what was tried, what the results had in common (120 characters or more)")
+    hist = s.setdefault("stuck_history", {})
+    again = hist.get(a.key, 0) >= 1 or st["kind"] == "rounds"
+    ua, na = (a.user_answer or "").strip(), (a.new_approach or "").strip()
+    if again and len(ua) < 3:
+        needs_user(f"'{a.key}' " + ("went through the maximum number of review rounds" if st["kind"] == "rounds" else "was already stuck once before") + ": the human must settle it. Pass --user-answer with their words.")
+    if not again and len(na) < 40 and len(ua) < 3:
+        die("--new-approach (what will change next time, 40 characters or more) or --user-answer is required")
+    n = len(re.findall(r"^## L-\d+", mem(r, "lessons.md").read_text(encoding="utf-8"), re.M)) + 1
+    with mem(r, "lessons.md").open("a", encoding="utf-8") as f:
+        f.write(f"## L-{n:03d} ({now()})\nSTUCK {a.key}: {a.analysis.strip()}\nResolution: " + (f"user said: {ua}" if ua else f"new approach: {na}") + "\n\n")
+    del s["stuck"][a.key]; s.get("attempts", {}).pop(a.key, None); hist[a.key] = hist.get(a.key, 0) + 1
+    if st["kind"] == "rounds":
+        nm = a.key.split(":", 1)[1]
+        if nm in s["deliverables"]:
+            s["deliverables"][nm]["rounds"] = []
+    save(r, s); journal(r, "unstick", f"{a.key} (lesson L-{n:03d})")
+    print(f"unstuck {a.key}; the analysis is recorded as lesson L-{n:03d}")
 
 
 # ---------------------------------------------------------------- hooks
@@ -1343,8 +1519,13 @@ def main():
     q = ps.add_parser("reopen"); q.add_argument("phase", choices=PHASES); q.add_argument("--reason", default=""); q.set_defaults(f=cmd_reopen)
     p = sub.add_parser("register"); p.add_argument("name"); p.add_argument("path")
     p.add_argument("--requires", default=""); p.set_defaults(f=cmd_register)
-    p = sub.add_parser("review"); p.add_argument("name"); p.add_argument("--agent", required=True, choices=REVIEWERS)
-    p.add_argument("--report", required=True); p.set_defaults(f=cmd_review)
+    p = sub.add_parser("review"); rs = p.add_subparsers(dest="rsub", required=True)
+    q = rs.add_parser("begin"); q.add_argument("name"); q.add_argument("--agent", required=True, choices=REVIEWERS); q.set_defaults(f=cmd_review_begin)
+    q = rs.add_parser("record"); q.add_argument("name"); q.add_argument("--agent", required=True, choices=REVIEWERS)
+    q.add_argument("--report", required=True); q.set_defaults(f=cmd_review_record)
+    p = sub.add_parser("attempts"); p.set_defaults(f=cmd_attempts)
+    p = sub.add_parser("unstick"); p.add_argument("key"); p.add_argument("--analysis", default="")
+    p.add_argument("--new-approach", dest="new_approach", default=""); p.add_argument("--user-answer", dest="user_answer", default=""); p.set_defaults(f=cmd_unstick)
     p = sub.add_parser("gate"); p.add_argument("action", choices=["check", "approve"])
     p.add_argument("--evidence", default=""); p.set_defaults(f=cmd_gate)
     p = sub.add_parser("memory"); p.add_argument("action", choices=["resume", "checkpoint", "decide", "learn", "log"])
@@ -1374,7 +1555,32 @@ def main():
         die("--text is required")
     if a.cmd == "memory" and a.action == "checkpoint" and not (a.task and a.next):
         die("--task and --next are required")
-    a.f(a)
+    root = find_root() if a.cmd != "init" else None
+    key = None
+    if root:
+        try:
+            key = op_key(a, root)
+        except SystemExit:
+            key = None
+    if key:
+        st = load(root).get("stuck", {}).get(key)
+        if st:
+            print(stuck_message(key, st), file=sys.stderr); sys.exit(3)
+    parts, real = [], (sys.stdout, sys.stderr)
+    sys.stdout, sys.stderr = _Tee(real[0], parts), _Tee(real[1], parts)
+    code = 0
+    try:
+        a.f(a)
+    except SystemExit as e:
+        code = e.code if isinstance(e.code, int) else (0 if e.code is None else 1)
+    finally:
+        sys.stdout, sys.stderr = real
+    if key:
+        try:
+            record_attempt(root, key, code, "".join(parts))
+        except SystemExit:
+            pass
+    sys.exit(code)
 
 
 if __name__ == "__main__":

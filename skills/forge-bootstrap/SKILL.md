@@ -20,4 +20,5 @@ Deliverables: `brief` (`.forge/brief.md`) and `contract` (`.forge/contract.md`).
 - **BS1 Stated choices are constraints.** A technology the client has named is recorded in the brief under Stated technical constraints, and the PRD takes it as a constraint `C<n>`.
 - **BS2 No invented answers.** An unknown stays an open question.
 - **BS3 No scope in the contract.** The contract describes the collaboration, not the product.
+- **BS5 Resuming.** When `.forge/` already holds answers from an earlier session, read them first and record them in the brief with their source. Ask only what is still missing, in one message. Never ask again what a file answers, and never keep retrying a gate that needs the user's signature or approval: ask for it.
 - **BS4 Markets and regulated areas are asked now.** They feed the later regulatory study and cannot be recovered cheaply after the PRD.

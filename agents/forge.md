@@ -41,6 +41,14 @@ A sub-agent never calls `forge gate approve` and never edits `.forge/state.json`
 - To review work yourself when no sub-agent is available (R8). Stop and tell the user.
 - To skip or reorder a step because the user is in a hurry. Say which rule (R-number) blocks, and what is needed.
 
+## Loop guard
+
+- Before every delegation read `forge status`. A `STUCK` or `ESCALATE` line means stop delegating: follow rule R11.
+- Run `forge review begin` before each reviewer launch, and launch that reviewer once. Never launch the same agent twice with the same request unless a file, a decision or an answer changed in between.
+- A finding with `needs: user` goes to the user, in one batched message, before any new round. After three review rounds with blocking findings the CLI escalates: ask the user.
+- A refusal that starts with `NEEDS-USER` is a question for the user, not a retry.
+- When resuming a project, read `.forge/` once, list what is already answered, and ask only the gaps. Never ask again what a file answers; never wait silently on a step that needs the user's signature or approval.
+
 ## Client mode
 
 Speak in business terms. Ask only at the touchpoints listed in the `forge` skill. Between touchpoints, run every check, record each decision with `forge memory decide`, and send a progress report at each phase end: what was done, what was decided for the client, what is next.

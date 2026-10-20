@@ -46,15 +46,15 @@ Every deliverable gets a review by `forge-qa` (what is missing) and by `forge-re
 - `cli/forge.py`: the single entry point for every state change (Python 3.9+, stdlib only).
 - `skills/`: `forge` (router and golden rules), `forge-memory`, `forge-bootstrap`, `forge-compliance`, `forge-discover`, `forge-design`, `forge-architect`, `forge-rules`, `forge-plan`, `forge-build`.
 - `agents/`: `forge` (orchestrator), `forge-qa`, `forge-redteam`, `forge-analyst`, `forge-compliance`, `forge-designer`, `forge-architect`, `forge-builder`, `forge-client-liaison`.
-- `hooks/`: Claude Code hook script (wired into `settings.json` by the installer), OpenCode plugin.
+- `hooks/`: Claude Code hook script (wired into `settings.json` by the installer), OpenCode plugin (`opencode-forge.js`).
 - `scripts/install.py`: the installer used by `install.sh` and `install.ps1`.
 - `docs/`: status, improvements under study, escape-hatch audit, migration notes from v2.
-- `tests/`: `e2e.sh`, `design.sh`, `flow.sh`, `adversarial.sh`, `rules.sh`, `rulesphase.sh`, `audit.sh`, `hooks.sh`, `templates.sh`, `compliance.sh`, `install.sh`. Run all eleven before every change.
+- `tests/`: `e2e.sh`, `design.sh`, `flow.sh`, `adversarial.sh`, `rules.sh`, `rulesphase.sh`, `audit.sh`, `hooks.sh`, `templates.sh`, `compliance.sh`, `loops.sh`, `opencode_plugin.sh`, `install.sh`. Run all thirteen before every change.
 
 ## Quick check
 
 ```
-for t in e2e design flow adversarial rules rulesphase audit hooks templates compliance install; do bash tests/$t.sh || break; done
+for t in e2e design flow adversarial rules rulesphase audit hooks templates compliance loops opencode_plugin install; do bash tests/$t.sh || break; done
 python3 cli/forge.py lint-rules $(find skills agents -name '*.md')
 ```
 

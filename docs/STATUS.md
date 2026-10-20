@@ -2,7 +2,7 @@
 
 Language rule: repository files in English; deliverables in `.forge/` follow the project language.
 
-## Done and tested (eleven suites in tests/, plus manual installer runs with a fake HOME)
+## Done and tested (thirteen suites in tests/, plus manual installer runs with a fake HOME)
 - CLI: init, status, mode, phase order, register, hash-bound QA and Red Team reviews, gate (check, approve with evidence, client-mode auto rule), memory (resume, checkpoint, decide, learn, log), hooks status, lint-rules, AGENTS.md block injection, design check (one screen per file, ranked anatomy, rules H1 and H2, layout defined, layout regions covered by plans).
 - Gate integration: design phase runs the design check and requires every screen to be registered; plans phase requires every layout region to have a task.
 - Phase `compliance` (between landscape and prd), first version: sourced register of obligations per market and topic, owner decisions recorded with `--user-evidence`, freshness limit, PRD requirements `L<n>` tied to obligations in both directions, rechecks required before the prd, architecture and validation gates (tests/compliance.sh). Skill `forge-compliance` and its agent; Forge ships no legal content, only the method.
@@ -27,6 +27,8 @@ Language rule: repository files in English; deliverables in `.forge/` follow the
 - `--evidence` text for approvals is recorded in the journal; the CLI cannot prove it quotes the user.
 - The seal detects accidental or careless edits to state.json, not a determined forger who reads the CLI source.
 
+- Loop guard (`docs/LOOPS.md`): review begin and record with one launch per version and at most three blocked rounds, attempt ledger with `STUCK` at five identical failures, `forge attempts` and `forge unstick` (analysis, new approach or the user's answer), `NEEDS-USER` refusals, `needs: user` findings, launch guard and same-file edit warning in the hooks, rule R11 and agent loop sections (tests/loops.sh, hooks.sh).
+- OpenCode plugin rewritten after a documentation review (`docs/OPENCODE-HOOKS.md`): never throws, silent outside Forge projects, timeouts, installed as `plugins/forge.js`; tested with Node, never run in a live OpenCode.
 - Installer scopes: global (`~/.forge`, user-level tool folders, `forge` on PATH) and local (`<project>/.forge/kit`, project `.claude` and `.opencode`, command `.forge/bin/forge`); interactive choice on a terminal (tested with a pseudo-terminal), global by default without one; installed copies are hash-checked by `forge kit verify`; local uninstall leaves `.forge` state untouched (tests/install.sh).
 
 ## Written, not verified on a live tool

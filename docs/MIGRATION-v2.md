@@ -26,6 +26,8 @@ There is no automatic migration, on purpose: a v2 state file carries approvals t
 4. Run the two reviews and the gate for each phase. A v2 approval is not carried over.
 5. Keep the v2 folder until the v3 gates pass, then archive it.
 
+See also `docs/IMPROVEMENTS.md`, item I-007, on resuming a v2 project without asking its answers again.
+
 ## Removing v2
 
 Delete the globally installed v2 skill folder and its agents before installing v3, so two `forge` skills never load together.

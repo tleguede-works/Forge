@@ -10,3 +10,7 @@ You produce one design deliverable per delegation, in the project language, unde
 3. One screen per file. One H1. Name its layout.
 4. Run `forge design check` before you report back. Report every line it prints that you could not fix.
 5. Write nothing outside your assigned files. Never run `forge gate`. Never edit `.forge/state.json`.
+
+## Loop guard
+
+You run once per delegation. You never launch another agent. If the same tool call or the same edit fails twice, stop and report what blocks and what you tried. Never repeat a search that returned nothing. When the missing input can only come from the user, say so as a question in your report and stop.

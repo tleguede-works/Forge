@@ -17,7 +17,7 @@ import os,sys; sys.path.insert(0,os.environ['CLIDIR']); import forge
 R=forge.find_root(); s=forge.load(R)
 $1
 forge.save(R,s)"; }
-rv() { mkdir -p .forge/reviews; cp "$3" ".forge/reviews/${1//:/_}.$2.json"; $F review "$1" --agent "$2" --report ".forge/reviews/${1//:/_}.$2.json"; }
+rv() { $F review begin "$1" --agent "$2" >/dev/null 2>&1 || return 1; mkdir -p .forge/reviews; cp "$3" ".forge/reviews/${1//:/_}.$2.json"; $F review record "$1" --agent "$2" --report ".forge/reviews/${1//:/_}.$2.json"; }
 T=$(mktemp -d); cd "$T"
 ok()   { "$@" >/dev/null 2>&1 || { echo "FAIL (expected success): $*"; exit 1; }; }
 fail() { "$@" >/dev/null 2>&1 && { echo "FAIL (expected refusal): $*"; exit 1; }; true; }
@@ -33,6 +33,7 @@ doc contract .forge/contract.md; doc brief .forge/brief.md
 ok $F register contract .forge/contract.md; ok $F register brief .forge/brief.md
 fail $F gate check                                 # no reviews
 fail rv contract qa bad.json   # blocking finding
+echo "- fixed the blocking point" >> .forge/contract.md; ok $F register contract .forge/contract.md   # a fix changes the version, so it can be reviewed again
 review_all contract; review_all brief
 ok   $F gate check
 fail $F gate approve                               # no evidence

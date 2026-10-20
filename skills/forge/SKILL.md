@@ -25,6 +25,7 @@ Each rule has an ID. Cite the ID when you refuse or stop.
 - **R8 No subagent, no review.** If your tool cannot launch a separate agent for review, stop the phase and tell the user. Reviewing your own work does not count.
 - **R9 Stop, do not work around.** If a rule cannot be satisfied, stop and report which rule (by ID) blocks you and what you need. A workaround is a violation.
 - **R10 No premature work.** Do not draft the deliverable of a later phase before the current phase is approved.
+- **R11 Loop guard.** Never repeat an operation that just failed without changing something first. After the second identical failure, stop and diagnose. The CLI stops an operation after five identical failures (`STUCK`) and after three review rounds that end with blocking findings (`ESCALATE`): run `forge attempts`, write the likely cause, then `forge unstick <key> --analysis "..." (--new-approach "..." | --user-answer "...")`. A second stop on the same operation needs the user's answer. A refusal that starts with `NEEDS-USER` means ask the user now, in one message: do not retry it and do not delegate it. When information is missing, search `.forge/` and the repository once; if it is not there, ask the user instead of searching or delegating again. Launch a reviewer once per `forge review begin`.
 
 ## Modes
 
@@ -50,11 +51,11 @@ For the current phase:
 1. Run `forge status`. Read the `next:` line.
 2. Load the phase skill: bootstrap uses `forge-bootstrap`; compliance uses `forge-compliance`; landscape, prd and roadmap use `forge-discover`; design uses `forge-design`; architecture uses `forge-architect`; rules uses `forge-rules`; plans uses `forge-plan`; build and validation use `forge-build`. If that skill is not installed, stop (R9).
 3. Produce the deliverables in `.forge/`, then `forge register <name> <path>`.
-4. Launch the `forge-qa` and `forge-redteam` agents on each deliverable. Each writes a JSON report; record it with `forge review <name> --agent qa|redteam --report <file>`.
-5. Fix every blocking finding, re-register, and re-run both reviews. A changed file resets its reviews.
+4. For each deliverable and each reviewer, run `forge review begin <name> --agent qa|redteam`, launch that reviewer once (`forge-qa` finds what is missing, `forge-redteam` finds contradictions and problems), then run `forge review record <name> --agent qa|redteam --report .forge/reviews/<name>.<agent>.json`. Never launch a reviewer without a `begin`, and never twice for one `begin`.
+5. Sort every blocking finding. `needs: producer`: fix it from the project files. `needs: user`: only the user can settle it, so ask in one batched message. Then `forge register` again (a changed file resets its reviews) and begin the reviews again. A reviewer is never run again on an unchanged version; the CLI refuses it.
 6. Run `forge gate check`. When it passes, ask the user for approval (client mode: only at touchpoints), then `forge gate approve --evidence "..."`.
 7. Run `forge memory checkpoint`.
 
 ## Reports
 
-A review report is a JSON file that the reviewing agent writes at `.forge/reviews/<name>.<agent>.json` (the `:` in `screen:<id>` becomes `_`). The CLI accepts that path only, and a gate fails if the report changes after it was recorded. The file shape is: `{"findings":[{"id","severity","status","evidence","reason?"}]}`. Severity is `critical`, `major` or `minor`. Status is `open`, `resolved` or `dismissed`. A dismissed finding carries a `reason` that is the ID of a decision recorded first with `forge memory decide` (for example `D-003`). The CLI refuses any other reason.
+A review report is a JSON file that the reviewing agent writes at `.forge/reviews/<name>.<agent>.json` (the `:` in `screen:<id>` becomes `_`). The CLI accepts that path only, and a gate fails if the report changes after it was recorded. The file shape is: `{"findings":[{"id","severity","status","evidence","reason?"}]}`. Severity is `critical`, `major` or `minor`. `needs` is `producer` (the default: the author can fix it from the project files) or `user` (the answer exists nowhere in the project and only the user can give it). Status is `open`, `resolved` or `dismissed`. A dismissed finding carries a `reason` that is the ID of a decision recorded first with `forge memory decide` (for example `D-003`). The CLI refuses any other reason.
