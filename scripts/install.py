@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""Forge installer. Copies the kit to ~/.forge and wires Claude Code and/or OpenCode.
-Usage: install.py [--src DIR] [--target auto|claude|opencode|both] [--uninstall]
-Everything it creates is listed in ~/.forge/install-manifest.json so --uninstall can remove it."""
-import argparse, json, os, re, shutil, stat, sys
+"""Forge installer. Two scopes:
+  global  the kit lives in ~/.forge and is wired into the user-level folders of Claude Code and OpenCode;
+  local   the kit lives in <project>/.forge/kit and is wired into the project's .claude and .opencode folders.
+Usage: install.py [--scope global|local] [--project DIR] [--target auto|claude|opencode|both] [--src DIR] [--uninstall]
+Without --scope the installer asks (from the terminal); with no terminal it installs globally.
+Everything it creates is listed in <kit>/install-manifest.json so --uninstall removes exactly that."""
+import argparse, hashlib, json, os, re, shutil, stat, sys
 from pathlib import Path
 
 HOME = Path(os.environ.get("HOME") or os.environ.get("USERPROFILE") or Path.home())
-KIT = HOME / ".forge"
-MANIFEST = KIT / "install-manifest.json"
 WIN = os.name == "nt"
+KIT_DIRS = ("cli", "hooks", "skills", "agents", "scripts")
 
 
 def log(m):
@@ -28,17 +30,36 @@ def convert_agent(name, text, target):
     return "---\nname: " + name + "\n" + "\n".join(lines) + "\n---\n" + body
 
 
-def copy_dir(src, dst, created):
-    if dst.exists():
-        shutil.rmtree(dst)
-    shutil.copytree(src, dst, ignore=shutil.ignore_patterns("__pycache__"))
-    created.append(str(dst))
+class Scope:
+    def __init__(self, kind, project=None):
+        self.kind, self.project = kind, project
+        if kind == "local":
+            self.kit, self.claude = project / ".forge" / "kit", project / ".claude"
+            self.opencode, self.bin = project / ".opencode", project / ".forge" / "bin"
+            self.cmd = ".forge\\bin\\forge.cmd" if WIN else ".forge/bin/forge"
+        else:
+            self.kit, self.claude = HOME / ".forge", HOME / ".claude"
+            self.opencode = HOME / ".config" / "opencode"
+            self.bin = (self.kit / "bin") if WIN else HOME / ".local" / "bin"
+            self.cmd = "forge"
+        self.manifest = self.kit / "install-manifest.json"
+        self.settings = self.claude / "settings.json"
 
+    def hook_commands(self):
+        if self.kind == "local":
+            py = "python" if WIN else "python3"
+            hook = '"$CLAUDE_PROJECT_DIR/.forge/kit/hooks/forge_hook.py"'
+            pre = f"{py} {hook}"
+        else:
+            pre = f'"{sys.executable}" "{self.kit / "hooks" / "forge_hook.py"}"'
+        return {ev: f"{pre} {arg}" for ev, arg in
+                (("SessionStart", "session-start"), ("PreCompact", "pre-compact"), ("PostToolUse", "post-tool"))}
 
-def hook_cmds():
-    py, hook = sys.executable, KIT / "hooks" / "forge_hook.py"
-    return {ev: f'"{py}" "{hook}" {arg}' for ev, arg in
-            (("SessionStart", "session-start"), ("PreCompact", "pre-compact"), ("PostToolUse", "post-tool"))}
+    def rel(self, p):
+        return str(p.relative_to(self.project)).replace("\\", "/") if self.kind == "local" else str(p)
+
+    def absolute(self, s):
+        return (self.project / s) if self.kind == "local" else Path(s)
 
 
 def strip_forge_hooks(cfg):
@@ -56,115 +77,182 @@ def strip_forge_hooks(cfg):
         cfg.pop("hooks", None)
 
 
-def edit_claude_settings(add):
-    f = HOME / ".claude" / "settings.json"
-    cfg = json.loads(f.read_text(encoding="utf-8")) if f.exists() else {}
+def edit_claude_settings(sc, add):
+    f = sc.settings
+    existed = f.exists()
+    cfg = json.loads(f.read_text(encoding="utf-8")) if existed else {}
     strip_forge_hooks(cfg)
     if add:
-        for ev, cmd in hook_cmds().items():
+        for ev, cmd in sc.hook_commands().items():
             group = {"hooks": [{"type": "command", "command": cmd}]}
             if ev == "PostToolUse":
                 group["matcher"] = "Write|Edit|MultiEdit"
             cfg.setdefault("hooks", {}).setdefault(ev, []).append(group)
+    if not add and not cfg and not existed:
+        return
+    if not add and not cfg:
+        f.unlink()
+        return
     f.parent.mkdir(parents=True, exist_ok=True)
     f.write_text(json.dumps(cfg, indent=2) + "\n", encoding="utf-8")
+    return not existed
 
 
-def detect():
-    t = []
-    if (HOME / ".claude").exists() or shutil.which("claude"):
-        t.append("claude")
-    if (HOME / ".config" / "opencode").exists() or shutil.which("opencode"):
-        t.append("opencode")
-    return t
+def detect(sc):
+    has = shutil.which
+    if sc.kind == "local":
+        p = sc.project
+        marks = {"claude": (p / ".claude").exists(),
+                 "opencode": (p / ".opencode").exists() or (p / "opencode.json").exists()}
+        found = [t for t, v in marks.items() if v]
+        if found:
+            return found
+    return [t for t, v in (("claude", (HOME / ".claude").exists() or has("claude")),
+                           ("opencode", (HOME / ".config" / "opencode").exists() or has("opencode"))) if v]
 
 
-def install(src, target):
-    created = []
-    targets = detect() if target == "auto" else (["claude", "opencode"] if target == "both" else [target])
+def prompt_scope():
+    text = ("\nWhere should Forge be installed?\n"
+            "  1) Global: once for this machine, available in every project (~/.forge)\n"
+            "  2) Local:  inside the current project only (.forge/kit, .claude, .opencode)\n")
+    stream = None
+    if sys.stdin and sys.stdin.isatty():
+        stream = sys.stdin
+    else:
+        try:
+            stream = open("CONIN$" if WIN else "/dev/tty")
+        except OSError:
+            stream = None
+    if stream is None:
+        log("no terminal to ask on: installing globally (pass --scope local for a project install)")
+        return "global"
+    print(text + "Choice [1]: ", end="", flush=True)
+    ans = stream.readline().strip().lower()
+    return "local" if ans in ("2", "l", "local") else "global"
+
+
+def hashes_of(files):
+    return {f: hashlib.sha256(Path(f).read_bytes()).hexdigest() for f in files}
+
+
+def install(sc, src, target):
+    created, installed = [], []
+    targets = detect(sc) if target == "auto" else (["claude", "opencode"] if target == "both" else [target])
     if not targets:
         sys.exit("forge-install: neither Claude Code nor OpenCode found; use --target claude|opencode|both")
-    KIT.mkdir(parents=True, exist_ok=True)
-    for d in ("cli", "hooks", "skills", "agents", "scripts"):
-        shutil.rmtree(KIT / d, ignore_errors=True)
-        shutil.copytree(src / d, KIT / d, ignore=shutil.ignore_patterns("__pycache__"))
-    import hashlib
-    man = {}
-    for d in ("cli", "hooks", "skills", "agents", "scripts"):
-        for p in sorted((KIT / d).rglob("*")):
-            if p.is_file() and "__pycache__" not in p.parts:
-                man[str(p.relative_to(KIT)).replace("\\", "/")] = hashlib.sha256(p.read_bytes()).hexdigest()
-    (KIT / "kit.sha256").write_text(json.dumps(man, indent=1), encoding="utf-8")
-    cli = KIT / "cli" / "forge.py"
+    sc.kit.mkdir(parents=True, exist_ok=True)
+    if src.resolve() != sc.kit.resolve():
+        for d in KIT_DIRS:
+            shutil.rmtree(sc.kit / d, ignore_errors=True)
+            shutil.copytree(src / d, sc.kit / d, ignore=shutil.ignore_patterns("__pycache__"))
+    cli = sc.kit / "cli" / "forge.py"
     cli.chmod(cli.stat().st_mode | stat.S_IEXEC)
+    sc.bin.mkdir(parents=True, exist_ok=True)
     if WIN:
-        b = KIT / "bin"; b.mkdir(exist_ok=True)
-        (b / "forge.cmd").write_text(f'@echo off\r\n"{sys.executable}" "{cli}" %*\r\n')
-        created.append(str(b / "forge.cmd"))
-        log(f"add {b} to your PATH to run `forge` (install.ps1 does this)")
+        shim = sc.bin / "forge.cmd"
+        py = "python" if sc.kind == "local" else f'"{sys.executable}"'
+        target_cli = r"%~dp0..\kit\cli\forge.py" if sc.kind == "local" else str(cli)
+        shim.write_text(f'@echo off\r\n{py} "{target_cli}" %*\r\n')
+        created.append(str(shim))
+    elif sc.kind == "local":
+        shim = sc.bin / "forge"
+        shim.write_text('#!/usr/bin/env sh\nexec python3 "$(dirname "$0")/../kit/cli/forge.py" "$@"\n')
+        shim.chmod(shim.stat().st_mode | stat.S_IEXEC)
+        created.append(str(shim))
     else:
-        lb = HOME / ".local" / "bin"; lb.mkdir(parents=True, exist_ok=True)
-        link = lb / "forge"
+        link = sc.bin / "forge"
         if link.is_symlink() or link.exists():
             link.unlink()
         link.symlink_to(cli); created.append(str(link))
-        if str(lb) not in os.environ.get("PATH", ""):
-            log(f"add {lb} to your PATH to run `forge`")
-    skills = [p for p in (KIT / "skills").iterdir() if p.is_dir()]
-    agents = sorted((KIT / "agents").glob("*.md"))
+        if str(sc.bin) not in os.environ.get("PATH", ""):
+            log(f"add {sc.bin} to your PATH to run `forge`")
+    skills = [p for p in (sc.kit / "skills").iterdir() if p.is_dir()]
+    agents = sorted((sc.kit / "agents").glob("*.md"))
+    settings_created = None
     for t in targets:
+        base = sc.claude if t == "claude" else sc.opencode
+        for s in skills:
+            dst = base / "skills" / s.name
+            if dst.exists():
+                shutil.rmtree(dst)
+            shutil.copytree(s, dst, ignore=shutil.ignore_patterns("__pycache__"))
+            created.append(str(dst)); installed += [str(p) for p in dst.rglob("*") if p.is_file()]
+        (base / "agents").mkdir(parents=True, exist_ok=True)
+        for a in agents:
+            dst = base / "agents" / a.name
+            dst.write_text(convert_agent(a.stem, a.read_text(encoding="utf-8"), t), encoding="utf-8")
+            created.append(str(dst)); installed.append(str(dst))
         if t == "claude":
-            base = HOME / ".claude"
-            for s in skills:
-                copy_dir(s, base / "skills" / s.name, created)
-            (base / "agents").mkdir(parents=True, exist_ok=True)
-            for a in agents:
-                dst = base / "agents" / a.name
-                dst.write_text(convert_agent(a.stem, a.read_text(encoding="utf-8"), "claude"), encoding="utf-8")
-                created.append(str(dst))
-            edit_claude_settings(True)
-            log("claude: skills, agents, hooks installed (settings.json hooks merged)")
+            settings_created = edit_claude_settings(sc, True)
+            log("claude: skills, agents and hooks installed (hooks merged into settings.json)")
         else:
-            base = HOME / ".config" / "opencode"
-            for s in skills:
-                copy_dir(s, base / "skills" / s.name, created)
-            (base / "agents").mkdir(parents=True, exist_ok=True)
-            for a in agents:
-                dst = base / "agents" / a.name
-                dst.write_text(convert_agent(a.stem, a.read_text(encoding="utf-8"), "opencode"), encoding="utf-8")
-                created.append(str(dst))
             (base / "plugin").mkdir(parents=True, exist_ok=True)
             plug = base / "plugin" / "forge.ts"
-            shutil.copy(KIT / "hooks" / "opencode-forge.ts", plug); created.append(str(plug))
-            log("opencode: skills, agents, plugin installed")
-    MANIFEST.write_text(json.dumps({"targets": targets, "created": created}, indent=2), encoding="utf-8")
-    log("done. Open a project and run: forge init --name <Name> --lang <code>")
+            txt = (sc.kit / "hooks" / "opencode-forge.ts").read_text(encoding="utf-8")
+            txt = txt.replace('const FORGE = "forge"', "const FORGE = " + json.dumps(sc.cmd))
+            plug.write_text(txt, encoding="utf-8")
+            created.append(str(plug)); installed.append(str(plug))
+            log("opencode: skills, agents and plugin installed")
+    files = {}
+    for d in KIT_DIRS:
+        for p in sorted((sc.kit / d).rglob("*")):
+            if p.is_file() and "__pycache__" not in p.parts:
+                files[str(p.relative_to(sc.kit)).replace("\\", "/")] = hashlib.sha256(p.read_bytes()).hexdigest()
+    inst = {sc.rel(Path(f)): h for f, h in hashes_of(installed).items()}
+    (sc.kit / "kit.sha256").write_text(json.dumps({"files": files, "installed": {
+        "relative_to": "project" if sc.kind == "local" else "absolute", "files": inst}}, indent=1), encoding="utf-8")
+    sc.manifest.write_text(json.dumps({"scope": sc.kind, "targets": targets, "settings_created": bool(settings_created),
+                                       "created": [sc.rel(Path(c)) for c in created]}, indent=2), encoding="utf-8")
+    if sc.kind == "local":
+        log("project install done. Commit .forge/kit, .claude and .opencode to share it, or add them to .gitignore to keep it personal.")
+        log("in this project, `forge` means .forge/bin/forge (add .forge/bin to PATH to type `forge`)")
+        g = HOME / ".claude" / "settings.json"
+        if g.exists() and "forge_hook" in g.read_text(encoding="utf-8"):
+            log("warning: a global Forge install also has hooks; remove one of the two or hooks run twice")
+    log("done. Open the project and run: forge init --name <Name> --lang <code>")
 
 
-def uninstall():
-    if MANIFEST.exists():
-        m = json.loads(MANIFEST.read_text(encoding="utf-8"))
-        for p in map(Path, m["created"]):
+def uninstall(sc):
+    if sc.manifest.exists():
+        m = json.loads(sc.manifest.read_text(encoding="utf-8"))
+        for c in m["created"]:
+            p = sc.absolute(c)
             if p.is_dir():
                 shutil.rmtree(p, ignore_errors=True)
             elif p.exists() or p.is_symlink():
                 p.unlink()
-        if "claude" in m["targets"]:
-            edit_claude_settings(False)
-        for d in [HOME/".claude"/"skills", HOME/".claude"/"agents", HOME/".config"/"opencode"/"skills",
-                  HOME/".config"/"opencode"/"agents", HOME/".config"/"opencode"/"plugin"]:
+        if "claude" in m["targets"] and sc.settings.exists():
+            edit_claude_settings(sc, False)
+        for d in [sc.claude / "skills", sc.claude / "agents", sc.opencode / "skills", sc.opencode / "agents",
+                  sc.opencode / "plugin", sc.bin]:
             if d.is_dir() and not any(d.iterdir()):
                 d.rmdir()
-    shutil.rmtree(KIT, ignore_errors=True)
-    log("uninstalled")
+        for d in (sc.claude, sc.opencode):
+            if sc.kind == "local" and d.is_dir() and not any(d.iterdir()):
+                d.rmdir()
+    shutil.rmtree(sc.kit, ignore_errors=True)
+    log(f"{sc.kind} install removed" + (" (the project's .forge state is untouched)" if sc.kind == "local" else ""))
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--src", default=str(Path(__file__).resolve().parent.parent))
+    ap.add_argument("--scope", choices=["global", "local"])
+    ap.add_argument("--project", default=".")
     ap.add_argument("--target", default="auto", choices=["auto", "claude", "opencode", "both"])
     ap.add_argument("--uninstall", action="store_true")
     a = ap.parse_args()
     if sys.version_info < (3, 9):
         sys.exit("forge-install: Python 3.9 or newer is required")
-    uninstall() if a.uninstall else install(Path(a.src), a.target)
+    project = Path(a.project).resolve()
+    if a.uninstall:
+        have = [k for k, s in (("global", Scope("global")), ("local", Scope("local", project))) if s.manifest.exists()]
+        kind = a.scope or (have[0] if len(have) == 1 else None)
+        if kind is None:
+            sys.exit("forge-install: " + ("nothing is installed here" if not have else "both scopes are installed; pass --scope global or --scope local"))
+        uninstall(Scope(kind, project if kind == "local" else None))
+    else:
+        kind = a.scope or prompt_scope()
+        if kind == "local" and not project.is_dir():
+            sys.exit(f"forge-install: project directory {project} does not exist")
+        install(Scope(kind, project if kind == "local" else None), Path(a.src), a.target)

@@ -4,12 +4,13 @@
 import type { Plugin } from "@opencode-ai/plugin"
 
 const EDIT_LIMIT = 10
+const FORGE = "forge"
 
 export const ForgePlugin: Plugin = async ({ $, directory }) => {
   let edits = 0
   const resume = async () => {
     try {
-      return await $`forge memory resume`.cwd(directory).text()
+      return await $`${FORGE} memory resume`.cwd(directory).text()
     } catch {
       return ""
     }
@@ -25,7 +26,7 @@ export const ForgePlugin: Plugin = async ({ $, directory }) => {
       edits += 1
       if (edits >= EDIT_LIMIT) {
         edits = 0
-        await $`forge memory log --text ${"edit threshold reached: checkpoint due"}`.cwd(directory).quiet()
+        await $`${FORGE} memory log --text ${"edit threshold reached: checkpoint due"}`.cwd(directory).quiet()
       }
     },
   }

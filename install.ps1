@@ -1,5 +1,5 @@
 # One-line install (PowerShell):  irm https://raw.githubusercontent.com/tleguede-works/Forge/main/install.ps1 | iex
-# With options: & ([scriptblock]::Create((irm <url>))) --target claude
+# With options: & ([scriptblock]::Create((irm <url>))) --scope local --target claude
 $ErrorActionPreference = "Stop"
 $repo = if ($env:FORGE_REPO) { $env:FORGE_REPO } else { "tleguede-works/Forge" }
 $ref  = if ($env:FORGE_REF)  { $env:FORGE_REF }  else { "main" }
@@ -18,7 +18,8 @@ else {
 & $py.Source (Join-Path $src "scripts\install.py") --src $src @args
 $bin = Join-Path $env:USERPROFILE ".forge\bin"
 $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
-if ($userPath -notlike "*$bin*") {
+# Only a global install puts forge.cmd in the user bin folder; a local install is used through .forge\bin\forge.cmd of the project.
+if ((Test-Path (Join-Path $bin "forge.cmd")) -and ($userPath -notlike "*$bin*")) {
   [Environment]::SetEnvironmentVariable("Path", "$userPath;$bin", "User")
   Write-Host "forge-install: added $bin to your user PATH. Open a new terminal."
 }

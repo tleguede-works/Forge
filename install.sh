@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
 # One-line install:  curl -fsSL https://raw.githubusercontent.com/tleguede-works/Forge/main/install.sh | sh
-# Options are passed through, e.g.:  ... | sh -s -- --target claude     or     --uninstall
+# Options are passed through, e.g.:  ... | sh -s -- --scope local     or     --scope global --target claude     or     --uninstall
+# Without --scope the installer asks on the terminal; with no terminal it installs globally.
 set -eu
 REPO="${FORGE_REPO:-tleguede-works/Forge}"
 REF="${FORGE_REF:-main}"

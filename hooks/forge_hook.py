@@ -28,7 +28,10 @@ def main():
     mem = root / ".forge" / "memory"
     if event == "session-start":
         out = subprocess.run([sys.executable, CLI, "memory", "resume"], cwd=root, capture_output=True, text=True)
-        print("Forge memory (read before acting):\n" + out.stdout)
+        try:
+            print("Forge memory (read before acting):\n" + out.stdout)
+        except BrokenPipeError:
+            pass
         return 0
     if event == "pre-compact":
         subprocess.run([sys.executable, CLI, "memory", "log", "--text", "context compaction started"], cwd=root)

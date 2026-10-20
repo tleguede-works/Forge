@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """forge - single entry point for every Forge state change. Python 3.9+, stdlib only."""
-import argparse, hashlib, json, re, sys
+import argparse, hashlib, json, os, re, sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -176,6 +176,9 @@ def cmd_init(a):
 
 
 def inject_agents_md(root):
+    local = KITDIR == root / ".forge" / "kit"
+    local_note = ("- This project ships its own Forge kit: in this project `forge` means `.forge/bin/forge` "
+                  "(Windows: `.forge\\bin\\forge.cmd`).\n") if local else ""
     block = f"""{BEGIN}
 ## Forge
 This project is driven by Forge. Run `forge status` before any work.
@@ -183,7 +186,7 @@ This project is driven by Forge. Run `forge status` before any work.
 - On session start and after any context compaction, run `forge memory resume` and read its output.
 - Deliverables live in `.forge/`, written in the project language (see `forge status`).
 - Orchestrator agent: `forge`. Skills: `forge`, `forge-memory`.
-{END}
+{local_note}{END}
 """
     f = root / "AGENTS.md"
     txt = f.read_text(encoding="utf-8") if f.exists() else ""
@@ -1130,10 +1133,19 @@ def kit_problems():
     m = KITDIR / "kit.sha256"
     if not m.is_file():
         return None
-    exp, now_ = json.loads(m.read_text(encoding="utf-8")), kit_hashes(KITDIR)
+    data, now_ = json.loads(m.read_text(encoding="utf-8")), kit_hashes(KITDIR)
+    exp = data["files"]
     out = [f"{k}: modified" for k, v in exp.items() if k in now_ and now_[k] != v]
     out += [f"{k}: missing" for k in exp if k not in now_]
     out += [f"{k}: not part of the installed kit" for k in now_ if k not in exp]
+    inst = data.get("installed", {})
+    base = KITDIR.parent.parent if inst.get("relative_to") == "project" else None
+    for rel, h in inst.get("files", {}).items():
+        p = (base / rel) if base else Path(rel)
+        if not p.is_file():
+            out.append(f"{rel}: installed copy is missing")
+        elif hashlib.sha256(p.read_bytes()).hexdigest() != h:
+            out.append(f"{rel}: installed copy was modified")
     return out
 
 

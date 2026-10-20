@@ -9,7 +9,7 @@ Forge turns an idea into a verified, implementable plan. It works in ordered pha
 
 ## Locating the CLI
 
-The CLI is `forge` on the PATH after installation. If the command is missing, stop and tell the user to run the installer. Do not recreate it.
+The CLI is `forge` on the PATH after a global installation. A project installation ships `.forge/bin/forge`, and the Forge block of `AGENTS.md` names it. If neither command exists, stop and tell the user to run the installer. Do not recreate it.
 
 ## Golden rules
 

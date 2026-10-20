@@ -27,7 +27,10 @@ Language rule: repository files in English; deliverables in `.forge/` follow the
 - `--evidence` text for approvals is recorded in the journal; the CLI cannot prove it quotes the user.
 - The seal detects accidental or careless edits to state.json, not a determined forger who reads the CLI source.
 
+- Installer scopes: global (`~/.forge`, user-level tool folders, `forge` on PATH) and local (`<project>/.forge/kit`, project `.claude` and `.opencode`, command `.forge/bin/forge`); interactive choice on a terminal (tested with a pseudo-terminal), global by default without one; installed copies are hash-checked by `forge kit verify`; local uninstall leaves `.forge` state untouched (tests/install.sh).
+
 ## Written, not verified on a live tool
+- Local scope: hook commands use `$CLAUDE_PROJECT_DIR` (Claude Code) and Windows paths were never run; OpenCode reading project-level skills from `.opencode/skills` is assumed from its documented layout.
 - install.ps1 and the Windows forge.cmd shim: never run on Windows.
 - OpenCode plugin hooks/opencode-forge.ts and OpenCode skill and agent directories.
 - Claude Code: PostToolUse exit code 2 reaching the model; running the orchestrator as main agent (`claude --agent forge`).
