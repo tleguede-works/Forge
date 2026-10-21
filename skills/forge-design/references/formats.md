@@ -22,7 +22,7 @@ One `## LAY-<name>` heading per layout, then one `- region: <name>` line per reg
 # SCR-001 Home
 - layout: LAY-app
 - route: /home
-## Anatomy
+## Anatomy {#anatomy}
 | rank | zone | role | why here | attention |
 |---|---|---|---|---|
 | 1 | Card carousel | context | cards are the object every action applies to | primary |

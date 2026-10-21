@@ -52,6 +52,7 @@ says "launched 2 times" $F review begin contract --agent qa
 # --- 6. a finding only the user can settle is reported as such
 bump; ok $F review begin contract --agent redteam; report "$ASK" redteam
 says "NEEDS-USER" $F review record contract --agent redteam --report .forge/reviews/contract.redteam.json
+says "ask the user: 1 open question" $F status                                          # the next action names the question
 # --- 7. three blocked rounds escalate to the user, who must answer before a fourth
 bump; ok $F review begin contract --agent qa; report "$BLOCK" qa; fail $F review record contract --agent qa --report .forge/reviews/contract.qa.json
 bump; ok $F review begin contract --agent qa; report "$BLOCK" qa; fail $F review record contract --agent qa --report .forge/reviews/contract.qa.json

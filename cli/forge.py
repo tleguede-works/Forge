@@ -115,16 +115,29 @@ HEADINGS = {
 }
 
 
+def _slug(key):
+    return re.sub(r"[^a-z0-9]+", "-", key.lower()).strip("-")
+
+
+def _heading_matches(raw, key):
+    anchor = re.search(r"\{#([a-z0-9-]+)\}", raw)
+    return _norm_heading(raw).startswith(key) or bool(anchor and anchor.group(1) == _slug(key))
+
+
+def has_heading(text, key, level="##"):
+    return any(_heading_matches(m.group(1), key.lower()) for m in re.finditer(rf"^{level}\s+(.*?)\s*$", text, re.M))
+
+
 def _norm_heading(h):
     return re.sub(r"^\d+[.)]?\s*", "", h.strip().lower().replace("\u2019", "'"))
 
 
 def structure_problems(name, text):
     out, lines = [], text.splitlines()
-    heads = [(i, len(m.group(1)), _norm_heading(m.group(2))) for i, l in enumerate(lines)
+    heads = [(i, len(m.group(1)), m.group(2)) for i, l in enumerate(lines)
              if (m := re.match(r"^(#{1,6})\s+(.*?)\s*$", l))]
     for key in HEADINGS.get(name, []):
-        hit = next(((i, lv) for i, lv, h in heads if h.startswith(key)), None)
+        hit = next(((i, lv) for i, lv, h in heads if _heading_matches(h, key)), None)
         if not hit:
             out.append(f"missing section '{key}'"); continue
         i, lv = hit
@@ -140,7 +153,7 @@ def cmd_template(a):
         die(f"no structure is defined for '{a.name}' (known: {', '.join(sorted(HEADINGS))})")
     print(f"# {a.name}\n")
     for i, k in enumerate(HEADINGS[a.name], 1):
-        print(f"## {i}. {k[0].upper() + k[1:]}\n<fill>\n")
+        print(f"## {i}. {k[0].upper() + k[1:]} {{#{_slug(k)}}}\n<fill>\n")
 
 
 def phase_of(name):
@@ -248,6 +261,22 @@ def next_action(s, r=None):
         missing += [f"plan:{x[0]}" for x in parse_slices(r) if f"plan:{x[0]}" not in s["deliverables"]]
     if missing:
         return f"produce and register: {', '.join(missing)}"
+    if r is not None and cur != "build":
+        asks, blocked = 0, set()
+        for n, d in s["deliverables"].items():
+            for rv in d["reviews"].values() if d["phase"] == cur else []:
+                if rv["hash"] == d["hash"] and rv["verdict"] == "blocked":
+                    blocked.add(n)
+                    try:
+                        fs = json.loads((r / rv["report"]).read_text(encoding="utf-8")).get("findings", [])
+                    except (OSError, ValueError):
+                        fs = []
+                    asks += sum(1 for f in fs if f.get("status") == "open" and f.get("needs") == "user")
+        if asks:
+            return (f"ask the user: {asks} open question(s) from the reviews wait for an answer (see the reports in .forge/reviews); "
+                    "put the answers in the deliverables, register them again, and begin the reviews again")
+        if blocked:
+            return f"fix the blocking findings of: {', '.join(sorted(blocked))}, then forge register and begin the reviews again"
     if cur == "build" and r is not None:
         todo = [x[0] for x in parse_slices(r) if s.get("slices", {}).get(x[0]) != "done"]
         run = [k for k, v in s.get("slices", {}).items() if v == "in_progress"]
@@ -551,7 +580,7 @@ ATTENTION = {"primary", "secondary", "tertiary"}
 
 def md_rows(text, heading):
     """Rows (list of cell lists, header excluded) of the first table under '## heading'."""
-    m = re.search(rf"^## {re.escape(heading)}\s*$(.*?)(?=^## |\Z)", text, re.S | re.M)
+    m = re.search(rf"^## (?:{re.escape(heading)}|.*\{{#{_slug(heading)}\}})\s*$(.*?)(?=^## |\Z)", text, re.S | re.M)
     if not m:
         return None
     rows = []
@@ -692,7 +721,7 @@ def parse_prd(root):
     if not f.is_file():
         return None
     txt = f.read_text(encoding="utf-8")
-    m = re.search(r"^## .*out of scope", txt, re.M | re.I)
+    m = re.search(r"^## .*(?:out of scope|\{#out-of-scope\})", txt, re.M | re.I)
     head, tail = (txt[:m.start()], txt[m.start():]) if m else (txt, "")
     pat = rf"^- \**({ID_RE})\b"
     return set(re.findall(pat, head, re.M)), set(re.findall(pat, tail, re.M))
@@ -703,7 +732,7 @@ def prd_problems(root):
     if not f.is_file():
         return ["prd.md is missing"]
     txt = f.read_text(encoding="utf-8")
-    m = re.search(r"^## .*out of scope", txt, re.M | re.I)
+    m = re.search(r"^## .*(?:out of scope|\{#out-of-scope\})", txt, re.M | re.I)
     head, tail = (txt[:m.start()], txt[m.start():]) if m else (txt, "")
     pat = rf"^- \**({ID_RE})\b"
     live, gone = re.findall(pat, head, re.M), set(re.findall(pat, tail, re.M))
@@ -782,9 +811,9 @@ def plans_problems(root, s):
         if not d:
             out.append(f"{sid}: no registered plan (forge register plan:{sid} .forge/plans/{sid}.md)"); continue
         txt = (root / d["path"]).read_text(encoding="utf-8")
-        for h in ("## Serves", "## Tasks", "## Acceptance", "## Test cases"):
-            if h not in txt:
-                out.append(f"{sid}: plan lacks section '{h}'")
+        for h in ("Serves", "Tasks", "Acceptance", "Test cases"):
+            if not has_heading(txt, h):
+                out.append(f"{sid}: plan lacks section '{h}' (in another language keep the anchor {{#{_slug(h)}}})")
         n = len(re.findall(r"^- \[[ x]\] T\d+", txt, re.M))
         if not 1 <= n <= 15:
             out.append(f"{sid}: plan has {n} tasks (allowed 1 to 15; split the slice above 15)")
@@ -1508,6 +1537,11 @@ def cmd_lint(a):
 
 
 def main():
+    try:
+        import signal
+        signal.signal(signal.SIGPIPE, signal.SIG_DFL)   # `forge status | head` must end quietly
+    except (ImportError, AttributeError, ValueError):
+        pass
     ap = argparse.ArgumentParser(prog="forge")
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("init"); p.add_argument("--name", required=True)

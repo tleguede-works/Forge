@@ -7,7 +7,7 @@
 ## Purpose
 One sentence: what the user does here.
 
-## Anatomy
+## Anatomy {#anatomy}
 | rank | zone | role | why here | attention |
 |---|---|---|---|---|
 
