@@ -277,6 +277,14 @@ def next_action(s, r=None):
                     "put the answers in the deliverables, register them again, and begin the reviews again")
         if blocked:
             return f"fix the blocking findings of: {', '.join(sorted(blocked))}, then forge register and begin the reviews again"
+    if r is not None and cur != "build":
+        try:
+            asks = [p for p in gate_problems(r, s, cur) if p.startswith("NEEDS-USER")]
+        except (OSError, ValueError, KeyError):
+            asks = []
+        if asks:
+            return (f"ask the user: {len(asks)} decision(s) wait for the user's words (forge gate check lists them); "
+                    "record each with forge memory decide --user-evidence, then update the deliverable")
     if cur == "build" and r is not None:
         todo = [x[0] for x in parse_slices(r) if s.get("slices", {}).get(x[0]) != "done"]
         run = [k for k, v in s.get("slices", {}).items() if v == "in_progress"]

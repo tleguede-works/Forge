@@ -32,6 +32,8 @@ fail $F phase start prd                                    # compliance comes fi
 ok   $F phase start compliance
 fail $F gate check                                         # no register
 ok $F memory decide --text "Owner accepts the risk of shipping without a lawyer review for OB-002" --user-evidence "Owner wrote: go ahead without review"
+says() { local pat="$1"; shift; out=$("$@" 2>&1); echo "$out" | grep -q "$pat" || { echo "FAIL: expected '$pat'"; echo "$out"; exit 1; }; }
+reg "$R1\n${R2/risk-accepted | D-001/required | -}"; says "ask the user: 1 decision" $F status   # the next action names the owner's decisions
 reg "$R1\n$R2"; ok $F gate check                           # sound register
 reg "$R1\n${R2/applies | risk-accepted/unknown | risk-accepted}"; blocked "still unknown"   # unknown applicability
 reg "$R1\n| OB-002 | US-CA | subscriptions renew automatically | cancelling is as easy as signing up | https://example.org/law-b | $OLD | applies | risk-accepted | D-001 |"; blocked "days ago"   # stale source
