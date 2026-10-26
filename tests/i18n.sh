@@ -11,15 +11,15 @@ $F template contract | grep -q "{#parties-and-roles}" || { echo "FAIL: forge tem
 cat > .forge/contract.md <<'E'
 # Contrat
 ## 1. Parties et rôles {#parties-and-roles}
-Texte.
+Texte de remplissage.
 ## 2. Déroulement du travail {#how-the-work-runs}
-Texte.
+Texte de remplissage.
 ## 3. Points de passage et délais {#touchpoints-and-answer-times}
-Texte.
+Texte de remplissage.
 ## 4. Changements après approbation {#changes-after-approval}
-Texte.
+Texte de remplissage.
 ## 5. Hors contrat {#not-included}
-Texte.
+Texte de remplissage.
 ## 6. Langue des livrables {#language-of-deliverables}
 Français.
 E
@@ -30,7 +30,7 @@ fail $F register contract .forge/contract.md                      # a translated
 python3 - <<'P'
 import os,sys; sys.path.insert(0,os.environ["CLIDIR"]); import forge,pathlib
 R=forge.find_root()
-(R/".forge"/"prd.md").write_text("## 3. Règles métier {#business-rules}\n- B1 règle\n## 10. Hors périmètre {#out-of-scope}\n- B2 retiré : raison\n")
+(R/".forge"/"prd.md").write_text("## 3. Règles métier {#business-rules}\n- B1 le paiement est capturé par carte (source: user-stated)\n## 10. Hors périmètre {#out-of-scope}\n- B2 paiement par virement : retiré, hors du MVP\n")
 live,gone=forge.parse_prd(R); assert live=={"B1"} and gone=={"B2"},(live,gone)
 assert forge.prd_problems(R)==[],forge.prd_problems(R)
 P

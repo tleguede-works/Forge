@@ -1,6 +1,6 @@
 ---
 name: forge-plan
-description: Forge phase 6. Writes one implementation plan per slice and the global test plan, precise enough for a weaker model to execute without guessing. Use when forge status shows phase plans, or when the user asks for implementation plans, task breakdowns, acceptance criteria or a test plan.
+description: Forge phase plans. Writes one implementation plan per slice and the global test plan, precise enough for a weaker model to execute without guessing. Use when forge status shows phase plans, or when the user asks for implementation plans, task breakdowns, acceptance criteria or a test plan.
 ---
 
 # Forge Plan

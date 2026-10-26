@@ -1,6 +1,6 @@
 ---
 name: forge
-description: Drives a software product from raw idea to a code-ready plan through gated phases (landscape research, PRD, roadmap, design, architecture, plans, build, validation). Use for any new project, for "continue the project", "where are we", "next phase", or any request that touches the .forge folder. Always load this skill first when a .forge folder exists.
+description: Drives a software product from raw idea to a code-ready plan through gated phases (bootstrap, landscape, compliance, PRD, roadmap, design, architecture, rules, plans, build, validation). Use for any new project, for "continue the project", "where are we", "next phase", or any request that touches the .forge folder. Always load this skill first when a .forge folder exists.
 ---
 
 # Forge
@@ -49,12 +49,28 @@ At each phase end in client mode, run `forge client report`, write the client-fa
 For the current phase:
 
 1. Run `forge status`. Read the `next:` line.
-2. Load the phase skill: bootstrap uses `forge-bootstrap`; compliance uses `forge-compliance`; landscape, prd and roadmap use `forge-discover`; design uses `forge-design`; architecture uses `forge-architect`; rules uses `forge-rules`; plans uses `forge-plan`; build and validation use `forge-build`. If that skill is not installed, stop (R9).
+2. Load the skill named by the `skill:` line of `forge status`; `producer:` names the agent to delegate the deliverable to. If that skill is not installed, stop (R9). The phase order and the mapping live in the CLI, never in this file.
 3. Produce the deliverables in `.forge/`, then `forge register <name> <path>`.
 4. For each deliverable and each reviewer, run `forge review begin <name> --agent qa|redteam`, launch that reviewer once (`forge-qa` finds what is missing, `forge-redteam` finds contradictions and problems), then run `forge review record <name> --agent qa|redteam --report .forge/reviews/<name>.<agent>.json`. Never launch a reviewer without a `begin`, and never twice for one `begin`.
 5. Sort every blocking finding. `needs: producer`: fix it from the project files. `needs: user`: only the user can settle it, so ask in one batched message. Then `forge register` again (a changed file resets its reviews) and begin the reviews again. A reviewer is never run again on an unchanged version; the CLI refuses it.
 6. Run `forge gate check`. When it passes, ask the user for approval (client mode: only at touchpoints), then `forge gate approve --evidence "..."`.
 7. Run `forge memory checkpoint`.
+
+## Transitions
+
+| Action | Command | Refused when |
+|---|---|---|
+| Start the next phase | `forge phase start <phase>` | the previous phase is not approved, or a registered deliverable drifted |
+| Approve a phase | `forge gate approve --evidence "<the user's words>"` | the gate check fails, a review is missing, or the evidence is empty |
+| Change an approved phase | `forge phase reopen <phase> --reason "<what changed>"` | the phase is not approved, or the reason is shorter than 8 characters |
+| Move inside a phase | `forge register <name> <path>` after editing | the phase is not in progress, or the deliverable structure is incomplete |
+| Read the position | `forge status` | the state was edited outside the CLI |
+
+A reopen resets every later phase, their reviews, the compliance rechecks, the client reviews and the build slices. Re-run what it reset; never restore a slice to `done` by hand.
+
+## Progress file
+
+`forge progress` writes `.forge/progress.md`, a derived view for a human: phases, slices grouped by release, task counts, evidence, acceptance criteria and test cases. It is never evidence and is never edited by hand. The build and validation gates regenerate it from the state, and `forge progress --check` refuses a hand edit.
 
 ## Reports
 

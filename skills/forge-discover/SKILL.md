@@ -1,6 +1,6 @@
 ---
 name: forge-discover
-description: Forge phases 1 to 3. Researches what already exists (landscape benchmark), writes the PRD with stable requirement IDs, then the roadmap. Use when the forge status shows phase landscape, prd or roadmap, or when the user asks to research competitors, write a PRD, a BRD, a roadmap or an MVP scope.
+description: Forge phases landscape, prd and roadmap. Researches what already exists (landscape benchmark), writes the PRD with stable requirement IDs, then the roadmap. Use when the forge status shows phase landscape, prd or roadmap, or when the user asks to research competitors, write a PRD, a BRD, a roadmap or an MVP scope.
 ---
 
 # Forge Discover
@@ -9,7 +9,7 @@ Three phases, in this order. The benchmark comes first so that research changes 
 
 Write every deliverable in the project language (`forge status`, `lang=`). Load the template file named in each step before writing.
 
-## Phase 1: landscape (deliverable `landscape`, `.forge/landscape.md`)
+## Landscape: deliverable `landscape`, `.forge/landscape.md`
 
 Template: `references/landscape-template.md`.
 
@@ -23,7 +23,7 @@ Template: `references/landscape-template.md`.
 
 Then register, review, gate (see the `forge` skill).
 
-## Phase 2: prd (deliverable `prd`, `.forge/prd.md`)
+## PRD: deliverable `prd`, `.forge/prd.md`
 
 Template: `references/prd-template.md`.
 
@@ -31,9 +31,9 @@ Template: `references/prd-template.md`.
 2. Give every business rule an ID `B<n>`, every edge case `E<n>`, every validation `V<n>`, every constraint `C<n>`. An ID is never reused. A removed requirement keeps its ID in the Out of scope section with its reason. New requirements take numbers after the highest number ever used.
 3. Every requirement cites the landscape row that justifies it, or says `user-stated`.
 4. Launch `forge-redteam` in challenge mode on the finished PRD.
-5. Client mode: produce a one-page plain-language summary for the validation touchpoint.
+5. Client mode: produce a one-page plain-language summary of the PRD for the `prd` touchpoint, at `.forge/client/prd-summary.md`.
 
-## Phase 3: roadmap (deliverable `roadmap`, `.forge/roadmap.md`)
+## Roadmap: deliverable `roadmap`, `.forge/roadmap.md`
 
 Template: `references/roadmap-template.md`.
 

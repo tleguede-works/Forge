@@ -1,14 +1,25 @@
 # Test plan: <product name>
 
-## Strategy
-Unit, integration, end to end, and interface checks: what each level covers and the tool used.
+## Strategy {#strategy}
+| Level | What it covers | Tool | Command |
+|---|---|---|---|
+| unit | pure logic and validations | <tool> | <command> |
+| integration | modules, database, integrations | <tool> | <command> |
+| end to end | one user journey per main persona | <tool> | <command> |
 
-## Coverage matrix
-| ID | Slice | Test case | Level |
+## Coverage matrix {#coverage-matrix}
+One row per PRD requirement, linked to the slice and the test case that proves it.
+| PRD ID | Slice | Test case | Level |
 |---|---|---|---|
 | B1 | S02 | TC-S02-1 | unit |
 
-## Regression set
-Test cases that run before every slice is marked done.
+## Regression set {#regression-set}
+The command that runs the whole regression set before every `forge slice done`, and the
+output that counts as a pass. A skipped test is not a pass.
+- command: <command>
+- pass condition: <what the output must show>
 
-## Environments and data
+## Environments and data {#environments-and-data}
+| Environment | URL or host | Data | Reset procedure |
+|---|---|---|---|
+| <environment> | <URL> | <fixtures or seed> | <command> |

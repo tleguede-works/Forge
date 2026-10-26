@@ -1,11 +1,11 @@
 ---
 name: forge-bootstrap
-description: Forge phase 0. Opens an engagement - records the client's request, markets, constraints and stated technical choices in a brief, and the terms of the collaboration in a contract. Use when forge status shows phase bootstrap, or when the user starts a new project, hands over a client request, or asks to set the project language, mode or touchpoints.
+description: Forge phase bootstrap. Opens an engagement - records the client's request, markets, constraints and stated technical choices in a brief, and the terms of the collaboration in a contract. Use when forge status shows phase bootstrap, or when the user starts a new project, hands over a client request, or asks to set the project language, mode or touchpoints.
 ---
 
 # Forge Bootstrap
 
-Deliverables: `brief` (`.forge/brief.md`) and `contract` (`.forge/contract.md`). Write both in the project language. Producer agent: `forge-analyst`. Reviewers: `forge-qa` and `forge-redteam`. Phase 0 is a client touchpoint.
+Deliverables: `brief` (`.forge/brief.md`) and `contract` (`.forge/contract.md`). Write both in the project language. Producer agent: `forge-analyst`. Reviewers: `forge-qa` and `forge-redteam`. The bootstrap phase is a client touchpoint.
 
 ## Procedure
 
@@ -20,5 +20,5 @@ Deliverables: `brief` (`.forge/brief.md`) and `contract` (`.forge/contract.md`).
 - **BS1 Stated choices are constraints.** A technology the client has named is recorded in the brief under Stated technical constraints, and the PRD takes it as a constraint `C<n>`.
 - **BS2 No invented answers.** An unknown stays an open question.
 - **BS3 No scope in the contract.** The contract describes the collaboration, not the product.
+- **BS4 Markets and regulated areas are asked now.** They feed the compliance phase and cannot be recovered cheaply after the PRD.
 - **BS5 Resuming.** When `.forge/` already holds answers from an earlier session, read them first and record them in the brief with their source. Ask only what is still missing, in one message. Never ask again what a file answers, and never keep retrying a gate that needs the user's signature or approval: ask for it.
-- **BS4 Markets and regulated areas are asked now.** They feed the later regulatory study and cannot be recovered cheaply after the PRD.

@@ -1,6 +1,6 @@
 ---
 name: forge-compliance
-description: Forge phase 2. Finds the laws and regulations that apply to a project in each target market, records them in a sourced register, and turns the applicable ones into requirements. Use when forge status shows phase compliance, or when the user asks about laws, regulations, legal obligations, data protection, payment or subscription rules, or which markets a product can launch in.
+description: Forge phase compliance. Finds the laws and regulations that apply to a project in each target market, records them in a sourced register, and turns the applicable ones into requirements. Use when forge status shows phase compliance, or when the user asks about laws, regulations, legal obligations, data protection, payment or subscription rules, or which markets a product can launch in.
 ---
 
 # Forge Compliance

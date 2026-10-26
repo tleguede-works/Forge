@@ -1,3 +1,7 @@
 __pycache__/
 *.pyc
 .forge/
+# labs/ holds throwaway products driven through Forge end to end. Only the folder
+# itself is tracked; every lab is local and disposable (AGENTS.md, Integration labs).
+labs/*
+!labs/.gitkeep

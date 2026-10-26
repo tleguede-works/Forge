@@ -41,7 +41,7 @@ Mechanical triggers are fired by hooks. Conditional triggers are fired by you wh
 | 8 | A decision is taken or an option is rejected | conditional | `forge memory decide` with the reason |
 | 9 | The same mistake happens twice, or you find a workaround | conditional | `forge memory learn` |
 | 10 | The user corrects you or states a lasting instruction | conditional | `forge memory log`, plus `learn` if it lasts |
-| 11 | A gate or review fails | CLI | automatic journal entry |
+| 11 | A gate fails | CLI | automatic `gate_blocked` journal entry; a review refusal is counted by `forge attempts` |
 | 12 | Session end | hook, best effort | `forge memory checkpoint`; never the only safety net |
 
 When a trigger fires, write immediately. Do not postpone to a later trigger.

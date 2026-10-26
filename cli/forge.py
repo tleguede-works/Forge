@@ -89,6 +89,51 @@ def sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()[:16]
 
 
+MIN_BODY = 8  # characters of real text a section must hold: `x` is refused, a sentence passes
+
+CHECKBOX = re.compile(r"(?m)^(\s*(?:[-*+]|\d+\.)\s+\[)[ xX](\])")
+PLACEHOLDER = re.compile(r"\{\{[A-Z_]+\}\}|\bTODO\b|\bTBD\b|<fill>")
+# A template token (`<rule>`, `<Sxx>`, `<product name>`) is a placeholder. Real HTML tags are spared.
+TEMPLATE_TOKEN = re.compile(
+    r"<(?!/?(?:br|hr|p|div|span|ul|ol|li|table|tr|td|th|a|b|i|em|strong|code|pre|img|input|button|form|label|h[1-6])\b)"
+    r"[a-zA-Z][a-zA-Z0-9 <>_.,:/-]{1,60}>")
+
+
+def content_text(path):
+    """Text that counts as content. Task checkboxes are progress, not content: ticking a plan
+    task must not change the hash of an approved plan (that refusal blocked validation)."""
+    return CHECKBOX.sub(r"\1 \2", Path(path).read_text(encoding="utf-8"))
+
+
+def art_hash(name, path):
+    """Hash of a deliverable as approved. A plan ignores its task checkboxes."""
+    if base_structure(name) == "plan":
+        return hashlib.sha256(content_text(path).encode("utf-8")).hexdigest()[:16]
+    return sha(path)
+
+
+def placeholders(text):
+    m = PLACEHOLDER.search(text) or TEMPLATE_TOKEN.search(text)
+    return m.group(0) if m else None
+
+
+# Phase to skill and phase to producer: the only executable copy of the mapping.
+# `forge status` prints it, `scripts/validate_repo.py` proves every named skill and agent exists.
+PHASE_SKILL = {
+    "bootstrap": "forge-bootstrap", "landscape": "forge-discover", "compliance": "forge-compliance",
+    "prd": "forge-discover", "roadmap": "forge-discover", "design": "forge-design",
+    "architecture": "forge-architect", "rules": "forge-rules", "plans": "forge-plan",
+    "build": "forge-build", "validation": "forge-build",
+}
+PHASE_PRODUCER = {
+    "bootstrap": "forge-analyst", "landscape": "forge-analyst", "compliance": "forge-compliance",
+    "prd": "forge-analyst", "roadmap": "forge-analyst", "design": "forge-designer",
+    "architecture": "forge-architect", "rules": "forge-architect", "plans": "forge-architect",
+    "build": "forge-builder", "validation": "forge-builder",
+}
+# Multi-instance deliverables: `plan:S01` and `screen:SCR-001` share the structure of their base name.
+MULTI = {"plan:": "plan", "screen:": "screen"}
+
 HEADINGS = {
     "brief": ["request in the client", "goal and success measure", "users", "target countries and regulated areas",
               "payments, subscriptions and data", "stated technical constraints", "deadline and budget signals",
@@ -98,8 +143,10 @@ HEADINGS = {
     "landscape": ["idea and premise challenge", "archetype and core loop", "products studied", "invariants",
                   "decisions", "research outcome"],
     "compliance-register": ["scope", "obligations", "open legal questions", "limits of this register"],
-    "prd": ["problem and audience", "goals and success measures", "business rules", "edge cases", "validations",
-            "constraints", "legal requirements", "user stories", "open questions", "out of scope"],
+    "prd": ["problem and audience", "personas and permissions", "goals and success measures", "business rules",
+            "edge cases", "validations", "constraints", "non-functional requirements", "legal requirements",
+            "user stories", "data and retention", "assumptions and risks", "dependencies and integrations",
+            "glossary", "release mapping", "open questions", "out of scope"],
     "roadmap": ["mvp", "r1", "r2", "trade-offs", "coverage"],
     "design-references": ["archetype and core loop", "reference products", "mood", "anti-references",
                           "directions presented to the client"],
@@ -109,9 +156,42 @@ HEADINGS = {
                      "external integrations", "dependencies", "deployment and configuration",
                      "risks and open questions"],
     "rules-report": ["files produced", "template selection", "baseline status of each gate", "audit output"],
+    "plan": ["serves", "contract", "tasks", "acceptance", "test cases"],
     "test-plan": ["strategy", "coverage matrix", "regression set", "environments and data"],
+    "screen": ["purpose", "anatomy", "states", "interactions", "responsive", "accessibility"],
     "validation-report": ["test plan results", "deviations from the plans and the prd", "requirements not met",
                           "acceptance summary"],
+}
+
+# Deliverables made of a parsed table, not headings: (row regex, minimum columns, the shape to write).
+ROW_RULES = {
+    "screen-map": (r"^\|\s*SCR-", 5, "| SCR-001 | /home | LAY-app | user | MVP |"),
+    "slices": (r"^\|\s*S\d+\s*\|", 4, "| S01 | Pay by card | billing | B1,B2,E1 |"),
+    "plans-index": (r"^\|\s*\d+\s*\|\s*S\d+", 5, "| 1 | S01 | `.forge/plans/S01.md` | none | MVP |"),
+    "layouts": (r"^## LAY-", 0, "## LAY-app <description> then one '- region: <name>' line per region"),
+}
+
+# The template file that holds the shape of each structure. One home: tests/templates.sh and
+# scripts/validate_repo.py read this dict instead of keeping their own copy.
+TEMPLATES = {
+    "brief": "forge-bootstrap/references/brief-template.md",
+    "contract": "forge-bootstrap/references/contract-template.md",
+    "landscape": "forge-discover/references/landscape-template.md",
+    "prd": "forge-discover/references/prd-template.md",
+    "roadmap": "forge-discover/references/roadmap-template.md",
+    "compliance-register": "forge-compliance/references/register-template.md",
+    "design-references": "forge-design/references/design-references-template.md",
+    "screen-map": "forge-design/references/screen-map-template.md",
+    "layouts": "forge-design/references/layouts-template.md",
+    "design-system": "forge-design/references/design-system-template.md",
+    "screen": "forge-design/references/screen-template.md",
+    "architecture": "forge-architect/references/architecture-template.md",
+    "slices": "forge-architect/references/slices-template.md",
+    "rules-report": "forge-rules/references/rules-report-template.md",
+    "plan": "forge-plan/references/plan-template.md",
+    "plans-index": "forge-plan/references/plans-index-template.md",
+    "test-plan": "forge-plan/references/test-plan-template.md",
+    "validation-report": "forge-build/references/validation-report-template.md",
 }
 
 
@@ -132,28 +212,95 @@ def _norm_heading(h):
     return re.sub(r"^\d+[.)]?\s*", "", h.strip().lower().replace("\u2019", "'"))
 
 
+def base_structure(name):
+    """The structure key of a deliverable: plan:S01 -> plan, screen:SCR-001 -> screen."""
+    for pre, base in MULTI.items():
+        if name.startswith(pre):
+            return base
+    return name
+
+
+def structure_known(name):
+    b = base_structure(name)
+    return b in HEADINGS or b in ROW_RULES
+
+
+def _section_text(body):
+    txt = " ".join(body)
+    return re.sub(r"\s+", " ", re.sub(r"[|#>*_`~\-]", " ", txt)).strip()
+
+
 def structure_problems(name, text):
+    """What a deliverable must contain, section by section.
+
+    Presence is not enough: a section whose body carries fewer than MIN_BODY characters of
+    real text is the `x` shortcut the 2026-10 audit reproduced, and it is refused here.
+    """
+    base = base_structure(name)
     out, lines = [], text.splitlines()
     heads = [(i, len(m.group(1)), m.group(2)) for i, l in enumerate(lines)
              if (m := re.match(r"^(#{1,6})\s+(.*?)\s*$", l))]
-    for key in HEADINGS.get(name, []):
+    for key in HEADINGS.get(base, []):
         hit = next(((i, lv) for i, lv, h in heads if _heading_matches(h, key)), None)
         if not hit:
             out.append(f"missing section '{key}'"); continue
         i, lv = hit
         end = next((j for j, l2, _ in heads if j > i and l2 <= lv), len(lines))
         body = [l for l in lines[i + 1:end] if l.strip() and not re.match(r"^\|[\s:|-]+\|?$", l.strip())]
+        txt = _section_text(body)
         if not body:
             out.append(f"section '{key}' is empty")
+        elif len(txt) < MIN_BODY:
+            out.append(f"section '{key}' holds {len(txt)} character(s) of text (minimum {MIN_BODY}: "
+                       "write the substance, not a placeholder)")
+    if base == "layouts":
+        if not re.search(r"^## LAY-\S+", text, re.M):
+            out.append("no '## LAY-<name>' layout heading")
+        elif not re.search(r"^- region:\s*\S+", text, re.M):
+            out.append("a layout defines no '- region: <name>' line")
+    if base in ROW_RULES and base != "layouts":
+        pat, ncol, shape = ROW_RULES[base]
+        rows = [l for l in lines if re.match(pat, l)]
+        if not rows:
+            out.append(f"no table row matching {shape}")
+        else:
+            short = [r for r in rows if len(r.strip().strip("|").split("|")) < ncol]
+            if short:
+                out.append(f"{len(short)} row(s) have fewer than {ncol} columns; write {shape}")
     return out
 
 
+ROW_HEADERS = {
+    "screen-map": "| id | route | layout | role | release |\n|---|---|---|---|---|",
+    "slices": "| id | name | module | serves |\n|---|---|---|---|",
+    "plans-index": "| order | slice | plan file | depends on | release |\n|---|---|---|---|---|",
+}
+
+# Metadata a structure needs above its first section. `forge template` prints it, so a model
+# that copies the skeleton produces a register or a rules report its own gate can accept.
+PREAMBLE = {
+    "compliance-register": ["- markets: <country or region codes, comma separated>",
+                            "- topics: <payments, subscriptions, personal-data, ...>",
+                            "- max-age-days: 180"],
+    "rules-report": ["- target: <opencode, claude or agents>", "- budget: <max total lines>"],
+}
+
+
 def cmd_template(a):
-    if a.name not in HEADINGS:
-        die(f"no structure is defined for '{a.name}' (known: {', '.join(sorted(HEADINGS))})")
-    print(f"# {a.name}\n")
-    for i, k in enumerate(HEADINGS[a.name], 1):
+    base = base_structure(a.name)
+    if not structure_known(a.name):
+        die(f"no structure is defined for '{a.name}' (known: {', '.join(sorted(set(HEADINGS) | set(ROW_RULES)))})")
+    print(f"# {base}\n")
+    for line in PREAMBLE.get(base, []):
+        print(line)
+    if base in PREAMBLE:
+        print()
+    for i, k in enumerate(HEADINGS.get(base, []), 1):
         print(f"## {i}. {k[0].upper() + k[1:]} {{#{_slug(k)}}}\n<fill>\n")
+    if base in ROW_HEADERS:
+        print(ROW_HEADERS[base] + "\n")
+    elif base == "layouts":
+        print("## LAY-<name> <description> {#lay-name}\n- region: <name>\n")
 
 
 def phase_of(name):
@@ -192,6 +339,7 @@ def cmd_init(a):
     write_now(root, "Project initialised", "Run `forge phase start bootstrap`", [], "")
     inject_agents_md(root)
     journal(root, "init", f"project={a.name} lang={a.lang}")
+    write_progress(root, load(root))
     print(f"initialised {root}/.forge")
 
 
@@ -219,11 +367,14 @@ This project is driven by Forge. Run `forge status` before any work.
 def drift(r, s):
     out = []
     for n, d in s["deliverables"].items():
+        if d.get("phase") not in s["phases"]:
+            out.append((n, f"{n}: registered with no valid phase; register it again", ""))
+            continue
         if s["phases"][d["phase"]] == "approved":
             p = r / d["path"]
             if not p.is_file():
                 out.append((n, f"{n}: approved deliverable is missing", d["phase"]))
-            elif sha(p) != d["hash"]:
+            elif art_hash(n, p) != d["hash"]:
                 out.append((n, f"{n}: changed after its phase was approved", d["phase"]))
     if s.get("rules") and s["phases"]["rules"] == "approved" and rules_hash(r) != s["rules"]["hash"]:
         out.append(("rules", "rule files changed after the rules phase was approved", "rules"))
@@ -246,6 +397,13 @@ def cmd_status(a):
     n = len(s.get("client", {}).get("pending", []))
     if n:
         print(f"client points pending: {n} (forge client list)")
+    if cur is None:
+        print("skill: forge-bootstrap (first phase) | producer: forge-analyst")
+    elif s["phases"][cur] == "approved":
+        i = PHASES.index(cur)
+        print(f"skill: {PHASE_SKILL[PHASES[i + 1]]}" if i + 1 < len(PHASES) else "skill: none (workflow complete)")
+    else:
+        print(f"skill: {PHASE_SKILL[cur]} | producer: {PHASE_PRODUCER[cur]}")
     print("next:", next_action(s, r))
 
 
@@ -314,8 +472,10 @@ def cmd_phase_start(a):
         die("approved work drifted: " + "; ".join(m for _, m, _ in dr) + ". Reopen the phase or restore the files")
     s["phases"][a.phase] = "in_progress"; s["phase"]["current"] = a.phase
     save(r, s); journal(r, "phase_start", a.phase)
+    write_progress(r, s)
     write_now(r, f"Phase {a.phase} started", next_action(s, r), [], "")
     print("started", a.phase)
+    print(f"load skill {PHASE_SKILL[a.phase]}; producer agent {PHASE_PRODUCER[a.phase]}")
 
 
 # ---------------------------------------------------------------- deliverables & reviews
@@ -330,12 +490,16 @@ def cmd_register(a):
     if not p.is_file() or r / ".forge" not in p.parents:
         die("deliverable must be an existing file inside .forge/")
     txt = p.read_text(encoding="utf-8")
-    if re.search(r"\{\{[A-Z_]+\}\}|\bTODO\b|\bTBD\b|<fill>", txt):
-        die("placeholders found (a {{TOKEN}}, TODO, TBD or <fill> remains)")
+    tok = placeholders(txt)
+    if tok:
+        die(f"placeholders found ({tok} remains); replace every template token with the project's own content")
+    if not structure_known(a.name):
+        die(f"no structure is defined for '{a.name}'; add it to HEADINGS or ROW_RULES, with its template")
     sp = structure_problems(a.name, txt)
     if sp:
-        die("the deliverable does not follow its structure (forge template " + a.name + " prints it): " + "; ".join(sp))
-    h = sha(p)
+        die("the deliverable does not follow its structure (forge template " + base_structure(a.name) +
+            " prints it): " + "; ".join(sp))
+    h = art_hash(a.name, p)
     old = s["deliverables"].get(a.name)
     entry = {"path": str(p.relative_to(r)), "phase": ph, "hash": h,
              "requires": sorted(set(a.requires.split(","))) if a.requires else [],
@@ -347,6 +511,7 @@ def cmd_register(a):
         entry["pending"] = old.get("pending", {})
     s["deliverables"][a.name] = entry
     save(r, s); journal(r, "register", f"{a.name} {h}")
+    write_progress(r, s)
     print(f"registered {a.name} hash={h}" + (" (reviews reset)" if old and old["hash"] != h else ""))
 
 
@@ -362,7 +527,7 @@ def stuck_message(key, st):
 def cmd_review_begin(a):
     r = need_root(); s = load(r)
     d = s["deliverables"].get(a.name) or die(f"'{a.name}' is not registered")
-    if sha(r / d["path"]) != d["hash"]:
+    if art_hash(a.name, r / d["path"]) != d["hash"]:
         die("stale: the file changed since registration; run `forge register` again")
     rkey = f"rounds:{a.name}"
     if rkey in s.get("stuck", {}):
@@ -401,7 +566,7 @@ def cmd_review_begin(a):
 def cmd_review_record(a):
     r = need_root(); s = load(r)
     d = s["deliverables"].get(a.name) or die(f"'{a.name}' is not registered")
-    if sha(r / d["path"]) != d["hash"]:
+    if art_hash(a.name, r / d["path"]) != d["hash"]:
         die("stale: the file changed since registration; run `forge register` again")
     exp = r / ".forge" / "reviews" / (a.name.replace(":", "_") + "." + a.agent + ".json")
     if Path(a.report).resolve() != exp.resolve() or not exp.is_file():
@@ -481,6 +646,12 @@ def gate_problems(r, s, ph):
             out.append("slices.md has no S<n> rows")
         out += [f"slice {x[0]} is {s.get('slices', {}).get(x[0], 'pending')}, not done" for x in rows
                 if s.get("slices", {}).get(x[0]) != "done"]
+    if ph in ("build", "validation"):
+        # The tracker is a derived view, never evidence: regenerate it from the state instead of
+        # trusting it. `forge progress --check`, run by CI, is what refuses a hand edit.
+        write_progress(r, s)
+    if ph == "validation":
+        out += validation_problems(r, s)
     if ph == "design":
         out += design_problems(r)
         for row in parse_screen_map(r):
@@ -489,11 +660,11 @@ def gate_problems(r, s, ph):
     if ph == "plans":
         out += layout_plan_problems(r)
     for n, d in s["deliverables"].items():
-        if d["phase"] != ph:
+        if d.get("phase") != ph:
             continue
         if not (r / d["path"]).is_file():
             out.append(f"{n}: file missing"); continue
-        if sha(r / d["path"]) != d["hash"]:
+        if art_hash(n, r / d["path"]) != d["hash"]:
             out.append(f"{n}: stale (file changed after registration)"); continue
         for ag in REVIEWERS:
             rv = d["reviews"].get(ag)
@@ -515,7 +686,9 @@ def cmd_gate(a):
         die(f"phase {ph} is {s['phases'][ph]}")
     probs = gate_problems(r, s, ph)
     if probs:
-        print(f"GATE {ph}: BLOCKED"); [print("  -", p) for p in probs]; sys.exit(1)
+        print(f"GATE {ph}: BLOCKED"); [print("  -", p) for p in probs]
+        journal(r, "gate_blocked", f"{ph}: {probs[0]}")
+        sys.exit(1)
     if a.action == "check":
         print(f"GATE {ph}: all mechanical checks pass; user approval still required"); return
     if not a.evidence or len(a.evidence.strip()) < 2:
@@ -544,6 +717,7 @@ def cmd_gate(a):
         s["rules"] = {"hash": rules_hash(r), "target": t_, "budget": b_}
     save(r, s)
     journal(r, "gate_approved", f"{ph} evidence={a.evidence!r}")
+    write_progress(r, s)
     write_now(r, f"Phase {ph} approved", next_action(s, r), [], "")
     print(f"phase {ph} approved")
 
@@ -626,6 +800,49 @@ def parse_screen_map(root):
     return rows
 
 
+def _hex(c):
+    m = re.fullmatch(r"#?([0-9a-fA-F]{6})", (c or "").strip())
+    return tuple(int(m.group(1)[i:i + 2], 16) for i in (0, 2, 4)) if m else None
+
+
+def contrast_problems(root):
+    """Accessibility is measurable: compute the ratio instead of trusting the stated one."""
+    f = root / ".forge" / "design" / "design-system.md"
+    if not f.is_file():
+        return []
+    rows = md_rows(f.read_text(encoding="utf-8"), "colors") or []
+    values = {r[0].strip(): _hex(r[1]) for r in rows if len(r) >= 2 and _hex(r[1])}
+
+    def lum(rgb):
+        def ch(v):
+            v /= 255
+            return v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4
+        r, g, b = (ch(x) for x in rgb)
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+    out = []
+    for r in rows:
+        if len(r) < 5:
+            continue
+        token, val, on, use, stated = (x.strip() for x in r[:5])
+        a, b = _hex(val), values.get(on) or _hex(on)
+        if not a or not b:
+            continue
+        la, lb = lum(a), lum(b)
+        c = (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+        m = re.search(r"(\d+(?:[.,]\d+)?)\s*:?\s*1?\b", stated)
+        if m and abs(float(m.group(1).replace(",", ".")) - c) > 0.3:
+            out.append(f"colors: {token} states {m.group(1)}:1 on {on}, but the two values give {c:.1f}:1")
+        # A pair is only a text pair when the row says so. A background on itself, a border,
+        # a divider or a row marked non-text has no minimum: the 1:1 ratio is expected.
+        text_use = (re.search(r"text|label|link|body|heading|icon|button", use, re.I)
+                    and not re.search(r"non-text|background|surface|border|divider|shadow", use, re.I))
+        need = 3.0 if "large" in use.lower() else 4.5
+        if text_use and c < need:
+            out.append(f"colors: {token} on {on} is {c:.1f}:1, below the {need}:1 minimum for text")
+    return out
+
+
 def design_problems(root):
     out = []
     d = root / ".forge" / "design"
@@ -698,6 +915,7 @@ def design_problems(root):
     for f in sorted((d / "screens").glob("*.md")) if (d / "screens").is_dir() else []:
         if f.stem not in ids:
             out.append(f"screens/{f.name}: not listed in screen-map.md")
+    out += contrast_problems(root)
     return out
 
 
@@ -735,6 +953,19 @@ def parse_prd(root):
     return set(re.findall(pat, head, re.M)), set(re.findall(pat, tail, re.M))
 
 
+SRC = re.compile(r"\bsource\s*:|\buser-stated\b|\blandscape\b|\bOB-\d+\b", re.I)
+
+
+def _statement(rest):
+    """The requirement itself, without its source clause: `- B1 x (source: user-stated)` is
+    a one-word rule, and counting the source would hide it."""
+    t = re.sub(r"\((?:source|obligation)\s*:[^)]*\)", " ", rest, flags=re.I)
+    t = re.sub(r"\bsource\s*:.*$", " ", t, flags=re.I)
+    t = re.sub(r"\bOB-\d+\b", " ", t, flags=re.I)
+    t = re.sub(r"\b(?:user-stated|landscape)\b", " ", t, flags=re.I)
+    return re.sub(r"\s+", " ", t).strip(" .,:;-\u2014*")
+
+
 def prd_problems(root):
     f = root / ".forge" / "prd.md"
     if not f.is_file():
@@ -742,9 +973,25 @@ def prd_problems(root):
     txt = f.read_text(encoding="utf-8")
     m = re.search(r"^## .*(?:out of scope|\{#out-of-scope\})", txt, re.M | re.I)
     head, tail = (txt[:m.start()], txt[m.start():]) if m else (txt, "")
-    pat = rf"^- \**({ID_RE})\b"
-    live, gone = re.findall(pat, head, re.M), set(re.findall(pat, tail, re.M))
-    out = [f"{i} is defined {live.count(i)} times (an ID is unique)" for i in sorted(set(live)) if live.count(i) > 1]
+    live, gone, out = [], set(), []
+    for line in head.splitlines():
+        mm = re.match(rf"^- \**({ID_RE})\b(.*)$", line)
+        if not mm:
+            continue
+        i, rest = mm.group(1), mm.group(2).strip(" *:-\u2014")
+        live.append(i)
+        if len(_statement(rest)) < 10:
+            out.append(f"{i}: states {len(_statement(rest))} character(s) once its source is removed; "
+                       "write the rule, case or constraint itself")
+        if not SRC.search(rest):
+            out.append(f"{i}: no source (write 'source: user-stated', a landscape row, or 'OB-<n>')")
+    for line in tail.splitlines():
+        mm = re.match(rf"^- \**({ID_RE})\b(.*)$", line)
+        if mm:
+            gone.add(mm.group(1))
+            if len(mm.group(2).strip(" *:-\u2014")) < 8:
+                out.append(f"{mm.group(1)} is withdrawn without a reason")
+    out += [f"{i} is defined {live.count(i)} times (an ID is unique)" for i in sorted(set(live)) if live.count(i) > 1]
     out += [f"{i} is both live and withdrawn (an ID is never reused)" for i in sorted(set(live) & gone)]
     if not live:
         out.append("the PRD defines no requirement ID (B, E, V or C)")
@@ -845,16 +1092,234 @@ def plans_problems(root, s):
     return out
 
 
+def validation_problems(root, s):
+    """The validation gate used to check only that the report exists and carries two reviews.
+    A one-line report passed. It is now compared with the test cases that must be covered."""
+    out = []
+    rep = root / ".forge" / "validation-report.md"
+    if not rep.is_file():
+        return ["validation-report.md is missing"]
+    txt = rep.read_text(encoding="utf-8")
+    cases = set()
+    pd = root / ".forge" / "plans"
+    for f in (sorted(pd.glob("*.md")) if pd.is_dir() else []):
+        cases |= set(re.findall(r"^- (TC-[\w-]+)", f.read_text(encoding="utf-8"), re.M))
+    tp = root / ".forge" / "test-plan.md"
+    if tp.is_file():
+        cases |= set(re.findall(r"\b(TC-[\w-]+)\b", tp.read_text(encoding="utf-8")))
+    if not cases:
+        out.append("no test case is defined in .forge/plans or .forge/test-plan.md")
+    reported = set(re.findall(r"\b(TC-[\w-]+)\b", txt))
+    out += [f"test case {c} is defined but has no result in the validation report" for c in sorted(cases - reported)]
+    out += [f"the validation report cites {c}, which no plan defines" for c in sorted(reported - cases)]
+    rows = md_rows(txt, "test plan results") or []
+    if not rows:
+        out.append("the report has no row in its 'Test plan results' table")
+    elif cases and len(rows) < len(cases):
+        out.append(f"the results table has {len(rows)} row(s) for {len(cases)} test case(s)")
+    verdicts = {"pass", "passed", "ok", "green", "fail", "failed", "blocked", "not-run", "not run"}
+    prd = parse_prd(root) or (set(), set())
+    known = prd[0] | prd[1]
+    for row in rows:
+        if len(row) < 5:
+            out.append("a results row needs 5 columns: test case | verifies | command | result | evidence")
+            continue
+        tc, ver, cmd, result, ev = [x.strip() for x in row[:5]]
+        if not tc.startswith("TC-"):
+            out.append(f"results row '{tc}' does not name a test case")
+        ids = [x for x in re.split(r"[,;\s]+", ver) if x]
+        if not ids:
+            out.append(f"{tc}: names no PRD id it verifies")
+        for i in ids:
+            if i not in known:
+                out.append(f"{tc}: verifies {i}, which the PRD does not define")
+        if result.lower() not in verdicts:
+            out.append(f"{tc}: result '{result}' must be pass, fail or blocked")
+        if len(ev) < 8:
+            out.append(f"{tc}: no evidence in the results table")
+        if not TEST_FILE.search(cmd) and not RUNNERS.search(cmd):
+            out.append(f"{tc}: the command is not a test command")
+    for sid, st in s.get("slices", {}).items():
+        if st == "done" and not re.search(rf"\b{sid}\b", txt):
+            out.append(f"slice {sid} is done but the validation report never mentions it")
+    reg = parse_register(root)
+    if reg:
+        for row in reg[1]:
+            if row["applicability"] == "applies" and not re.search(rf"\b{row['id']}\b", txt):
+                out.append(f"applicable obligation {row['id']} has no result in the validation report")
+    return out
+
+
 def cmd_check(a):
     r = need_root(); s = load(r)
     probs = {"coverage": lambda: coverage_problems(r), "premises": lambda: premises_problems(r, s),
-             "plans": lambda: plans_problems(r, s)}[a.what]()
+             "plans": lambda: plans_problems(r, s), "prd": lambda: prd_problems(r),
+             "validation": lambda: validation_problems(r, s)}[a.what]()
     if probs:
         print(f"CHECK {a.what}: FAILED"); [print("  -", p) for p in probs]; sys.exit(1)
     print(f"CHECK {a.what}: pass")
 
 
+# ---------------------------------------------------------------- human progress file (derived)
+def section_lines(text, heading):
+    m = re.search(rf"^## (?:{re.escape(heading)}|.*\{{#{_slug(heading)}\}})\s*$(.*?)(?=^## |\Z)",
+                  text, re.S | re.M)
+    if not m:
+        return []
+    return [l.strip().lstrip("-* ").strip() for l in m.group(1).splitlines() if l.strip()]
+
+
+def parse_plans_index(root):
+    f = root / ".forge" / "plans" / "index.md"
+    rows = []
+    if f.is_file():
+        for line in f.read_text(encoding="utf-8").splitlines():
+            if re.match(r"^\|\s*\d+\s*\|\s*S\d+", line):
+                c = [x.strip() for x in line.strip().strip("|").split("|")]
+                if len(c) >= 5:
+                    rows.append(c[:5])
+    return rows
+
+
+def plan_facts(root, sid):
+    f = root / ".forge" / "plans" / f"{sid}.md"
+    if not f.is_file():
+        return None
+    txt = f.read_text(encoding="utf-8")
+    return {
+        "tasks": len(re.findall(r"^- \[[ xX]\] T\d+", txt, re.M)),
+        "done": len(re.findall(r"^- \[[xX]\] T\d+", txt, re.M)),
+        "acceptance": section_lines(txt, "acceptance"),
+        "cases": [f"{m.group(1)} {m.group(2)}".strip()
+                  for m in re.finditer(r"^- (TC-[\w-]+)\s*(.*)$", txt, re.M)],
+    }
+
+
+def progress_text(r, s):
+    """Deterministic text: regenerating it twice from the same state gives the same bytes,
+    which is what lets `forge progress --check` detect a hand edit without a digest."""
+    rows = parse_slices(r)
+    index = {c[1]: c for c in parse_plans_index(r)}
+    ev = s.get("slice_evidence", {})
+    cur = s["phase"]["current"]
+    L = ["<!-- forge:progress v1 -->",
+         f"# Implementation progress: {s['project']}", "",
+         "Generated by `forge progress` from `.forge/state.json`, `.forge/plans/index.md` and",
+         "`.forge/plans/*.md`. This file is a derived view: never edit it by hand. Change the plan",
+         "with a forge command, then run `forge progress` again. `forge progress --check` refuses",
+         "a stale or hand-edited file; CI runs it. The build and validation gates regenerate this",
+         "file from the state before they read it.", "",
+         f"- phase: {cur or 'not started'} ({s['phases'][cur] if cur else 'pending'})",
+         f"- next action: {next_action(s, r)}", ""]
+
+    L += ["## Phases", "", "| Phase | Status | Skill | Producer |", "|---|---|---|---|"]
+    for p in PHASES:
+        L.append(f"| {p} | {s['phases'][p]} | `{PHASE_SKILL[p]}` | `{PHASE_PRODUCER[p]}` |")
+    L.append("")
+
+    ordered = [c[1] for c in parse_plans_index(r) if c[1] in {x[0] for x in rows}]
+    ordered += [x[0] for x in rows if x[0] not in ordered]
+    waves = {}
+    for sid in ordered:
+        wave = index.get(sid, [None, None, None, None, "unassigned"])[4] or "unassigned"
+        waves.setdefault(wave, []).append(sid)
+
+    L += ["## Waves", ""]
+    if not ordered:
+        L += ["No slice exists yet: the architecture phase writes `.forge/slices.md`.", ""]
+    for wave, sids in waves.items():
+        L += [f"### {wave}", "", "| Order | Slice | Status | Tasks | Evidence a human can check |",
+              "|---|---|---|---|---|"]
+        for sid in sids:
+            name = next((x[1] for x in rows if x[0] == sid), sid)
+            st = s.get("slices", {}).get(sid, "not started")
+            facts = plan_facts(r, sid)
+            tasks = f"{facts['done']}/{facts['tasks']}" if facts and facts["tasks"] else "no plan"
+            L.append(f"| {index.get(sid, [sid])[0]} | {sid} — {name} | {st} | {tasks} | "
+                     f"{('`' + ev[sid] + '`') if sid in ev else '—'} |")
+        L.append("")
+
+    L += ["## Slice detail", ""]
+    if not ordered:
+        L += ["Nothing to detail yet.", ""]
+    for sid in ordered:
+        name = next((x[1] for x in rows if x[0] == sid), sid)
+        module = next((x[2] for x in rows if x[0] == sid), "-")
+        serves = ", ".join(sorted(next((x[3] for x in rows if x[0] == sid), set()))) or "none"
+        st = s.get("slices", {}).get(sid, "not started")
+        L += [f"### {sid} — {name} — {st}", "",
+              f"- module: {module}", f"- serves: {serves}",
+              f"- plan: `{'.forge/plans/' + sid + '.md'}`",
+              f"- evidence: {('`' + ev[sid] + '`') if sid in ev else 'none yet'}"]
+        facts = plan_facts(r, sid)
+        if not facts:
+            L += ["- plan missing: register it before this slice can start", ""]
+            continue
+        L.append(f"- tasks done: {facts['done']} of {facts['tasks']}")
+        L += ["- acceptance criteria a human can check:"]
+        L += ([f"  - {a}" for a in facts["acceptance"]] or ["  - none written"])
+        L += ["- test cases:"]
+        L += ([f"  - `{c}`" for c in facts["cases"]] or ["  - none written"])
+        L.append("")
+    return "\n".join(L).rstrip() + "\n"
+
+
+def progress_file(r):
+    return r / ".forge" / "progress.md"
+
+
+def write_progress(r, s):
+    try:
+        progress_file(r).write_text(progress_text(r, s), encoding="utf-8")
+    except OSError:
+        pass  # the progress file is a convenience; a state change must never fail because of it
+
+
+def progress_problems(r, s):
+    p = progress_file(r)
+    if not p.is_file():
+        return ["progress.md is missing (run `forge progress`)"]
+    if p.read_text(encoding="utf-8") != progress_text(r, s):
+        return ["progress.md is stale or was edited by hand (run `forge progress`; never edit it)"]
+    return []
+
+
+def cmd_progress(a):
+    r = need_root(); s = load(r)
+    if a.check:
+        probs = progress_problems(r, s)
+        if probs:
+            print("PROGRESS: " + "; ".join(probs)); sys.exit(1)
+        print("progress: up to date"); return
+    write_progress(r, s)
+    print(f"wrote .forge/progress.md ({len(parse_slices(r))} slice(s))")
+
+
 # ---------------------------------------------------------------- slices, reopen, client
+RUNNERS = re.compile(r"\b(pytest|tox|nox|npm (run )?test|yarn test|pnpm test|go test|cargo test|dotnet test|"
+                     r"mvn (?:-\S+ )*test|gradle\w* test|make test|jest|vitest|playwright|cypress|rspec|phpunit|"
+                     r"bundle exec rspec|unittest)\b", re.I)
+RESULT = re.compile(r"\b\d+\s*(?:passed|failed|tests?|assertions?|checks?)\b|"
+                    r"\b(?:pass|passed|fail|failed|ok|green|red)\b", re.I)
+TEST_FILE = re.compile(r"[\w./-]+\.(?:py|js|ts|tsx|jsx|rb|go|rs|java|kt|cs|php|ex|exs|sh|feature|spec)\b")
+
+
+def evidence_problems(root, ev):
+    """`slice done` used to accept any sentence with a colon. Evidence now has to be a
+    command that can run and a result that states an outcome."""
+    cmd, _, res = ev.partition(" : ")
+    out = []
+    paths = TEST_FILE.findall(cmd)
+    missing = [p for p in paths if not (root / p).is_file()]
+    if missing:
+        out.append(f"the evidence names {missing[0]}, which does not exist in the project")
+    if not paths and not RUNNERS.search(cmd):
+        out.append("the command names no test runner and no test file, so the claim is not runnable")
+    if not RESULT.search(res):
+        out.append(f"the result '{res.strip()}' states no count and no pass or fail")
+    return out
+
+
 def cmd_slice(a):
     r = need_root(); s = load(r)
     if s["phase"]["current"] != "build" or s["phases"]["build"] != "in_progress":
@@ -880,8 +1345,13 @@ def cmd_slice(a):
             die(f"{a.id} is {st}")
         if not re.match(r"^.{3,}\s:\s.{3,}$", (a.evidence or "").strip()):
             die("done needs --evidence shaped '<test command> : <result>'")
+        weak = evidence_problems(r, a.evidence.strip())
+        if weak:
+            die("weak evidence: " + "; ".join(weak))
         sl[a.id] = "done"
+        s.setdefault("slice_evidence", {})[a.id] = a.evidence.strip()
         save(r, s); journal(r, "slice_done", f"{a.id} evidence={a.evidence!r}")
+        write_progress(r, s)
         write_now(r, f"{a.id} done", "start the next slice or run forge gate check", [], "")
     print(f"{a.id}: {sl[a.id]}")
 
@@ -893,18 +1363,38 @@ def cmd_reopen(a):
     if len(a.reason.strip()) < 8:
         die("--reason is required (what changed and why)")
     i = PHASES.index(a.phase)
+    reset = set(PHASES[i:])
     for p in PHASES[i + 1:]:
         s["phases"][p] = "pending"
     for d in s["deliverables"].values():
-        if PHASES.index(d["phase"]) > i:
+        if d["phase"] in reset:
             d["reviews"], d["pending"], d["rounds"] = {}, {}, []
+    # The four sets the first version forgot: build progress, compliance rechecks, client
+    # reviews and the loop counters. A reopen that leaves a slice `done` lets the build gate
+    # pass without rework, so every one of them is scoped to the reopened subtree.
+    if i <= PHASES.index("build"):
+        s["slices"] = {}
+        s["slice_evidence"] = {}
+    if i <= PHASES.index("rules"):
+        s.pop("rules", None)
+    for bucket in (s.get("compliance", {}).get("rechecks", {}),
+                   s.get("client", {}).get("reviews", {})):
+        for p in list(bucket):
+            if PHASES.index(p) > i:
+                del bucket[p]
+    s.pop("attempts", None)
+    for k in list(s.get("stuck", {})):
+        target = k.split(":", 1)[1] if ":" in k else k
+        if any(p in k for p in reset) or s["deliverables"].get(target, {}).get("phase") in reset:
+            del s["stuck"][k]
     s["phases"][a.phase] = "in_progress"; s["phase"]["current"] = a.phase
     save(r, s)
     with mem(r, "decisions.md").open("a", encoding="utf-8") as f:
         f.write(f"## REOPEN {a.phase} ({now()})\n{a.reason}\n\n")
     journal(r, "reopen", f"{a.phase}: {a.reason}")
+    write_progress(r, s)
     write_now(r, f"Phase {a.phase} reopened", "edit, re-register, re-review, then gate; later phases restart", [], "")
-    print(f"reopened {a.phase}; later phases are pending and their reviews are reset")
+    print(f"reopened {a.phase}; later phases are pending, their reviews, rechecks and build progress are reset")
 
 
 def cmd_client(a):
@@ -1420,6 +1910,8 @@ def op_key(a, r):
         return f"design:{a.action}:{'plans' if a.plans else 'screens'}"
     if c == "check":
         return f"check:{a.what}"
+    if c == "progress":
+        return "progress"
     if c == "rules":
         return "rules:audit"
     if c == "phase":
@@ -1575,7 +2067,7 @@ def main():
     p.add_argument("--files", default=""); p.add_argument("--blockers", default="")
     p.add_argument("--text", default=""); p.add_argument("--user-evidence", dest="user_evidence", default=""); p.set_defaults(f=cmd_memory)
     p = sub.add_parser("design"); p.add_argument("action", choices=["check"]); p.add_argument("--plans", action="store_true"); p.set_defaults(f=cmd_design)
-    p = sub.add_parser("check"); p.add_argument("what", choices=["coverage", "premises", "plans"]); p.set_defaults(f=cmd_check)
+    p = sub.add_parser("check"); p.add_argument("what", choices=["coverage", "premises", "plans", "prd", "validation"]); p.set_defaults(f=cmd_check)
     p = sub.add_parser("slice"); p.add_argument("action", choices=["start", "done"]); p.add_argument("id")
     p.add_argument("--evidence", default=""); p.set_defaults(f=cmd_slice)
     p = sub.add_parser("client"); p.add_argument("action", choices=["ask", "list", "resolve", "sweep", "report", "review"])
@@ -1590,6 +2082,7 @@ def main():
     p = sub.add_parser("compliance"); p.add_argument("action", choices=["recheck"]); p.add_argument("--phase", default="")
     p.add_argument("--evidence", default=""); p.set_defaults(f=cmd_compliance)
     p = sub.add_parser("template"); p.add_argument("name"); p.set_defaults(f=cmd_template)
+    p = sub.add_parser("progress"); p.add_argument("--check", action="store_true"); p.set_defaults(f=cmd_progress)
     p = sub.add_parser("hooks"); p.add_argument("action", choices=["status"]); p.set_defaults(f=cmd_hooks)
     p = sub.add_parser("lint-rules"); p.add_argument("paths", nargs="+"); p.set_defaults(f=cmd_lint)
     a = ap.parse_args()
