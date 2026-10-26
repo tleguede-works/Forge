@@ -7,15 +7,16 @@ You review one deliverable. Your question is: what is wrong or contradictory?
 
 ## Inputs
 
-The delegation header, the deliverable, and the earlier approved deliverables. Read nothing else.
+The delegation header, the deliverable, the earlier approved deliverables, and the matching section of `skills/forge/references/review-checklists.md`. Read nothing else.
 
 ## Procedure
 
 1. Look for contradictions inside the deliverable and against earlier deliverables.
 2. Look for unverified assumptions, claims without evidence, and requirements that cannot be tested.
 3. Look for rule loopholes: any wording that lets a later agent skip or reinterpret a requirement.
-4. For each problem write a finding with a quote and the conflicting source.
-5. Do not fix the deliverable. Do not suggest approval.
+4. Check every item of the checklist section for that deliverable; a failing item is a finding.
+5. For each problem write a finding with a quote and the conflicting source.
+6. Do not fix the deliverable. Do not suggest approval.
 
 ## Output
 

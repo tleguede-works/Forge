@@ -70,9 +70,10 @@ Cite the ID when you refuse a request or stop.
   `AGENTS.md`. Zero hits is the pass condition. Generated rule sets face
   `forge rules audit`: a command in backticks and a pass condition per gate, no vague
   prose.
-- **I6 The suites run on POSIX only.** All 14 need a POSIX shell and `python3`; six
+- **I6 The suites run on POSIX only.** All 16 need a POSIX shell and `python3`; six
   call `sed -i` and `compliance.sh` calls `date -d`. Run them in the devcontainer or a
-  Codespace. A suite reported as passing from native Windows was not run.
+  Codespace, or let `.github/workflows/ci.yml` run them. A suite reported as passing from
+  native Windows was not run.
 - **I7 Preserve the injected block.** `forge init` writes `<!-- forge:start v3 -->` …
   `<!-- forge:end -->` into a project's `AGENTS.md`. Edit outside the markers. Moving,
   duplicating or deleting them breaks the project's link to its CLI.
@@ -94,8 +95,10 @@ Cite the ID when you refuse a request or stop.
 | `skills/<name>/SKILL.md` | A skill under 100 lines, plus its `references/` |
 | `agents/*.md` | Subagent definitions and their write rights |
 | `hooks/forge_hook.py`, `hooks/opencode-forge.js` | The Claude Code and OpenCode loop guards, which mirror each other |
-| `tests/*.sh` | 14 POSIX suites, one per mechanism |
+| `tests/*.sh` | 16 POSIX suites, one per mechanism |
 | `scripts/install.py` | Global and local install, hooks, manifest, Windows shim |
+| `scripts/validate_repo.py` | The repository validator: skill names, references, phase registry, templates, documented commands, suite listing |
+| `.github/workflows/ci.yml` | Lint, validator, then every suite on push |
 | `docs/` | Status, improvements, audits, migration, loop analysis |
 
 ## Commands
@@ -169,26 +172,32 @@ a real project driven through every phase by a real model, not a unit test.
 
 These are live today. Closing one is a code change, not an edit to this file.
 
-- `cmd_reopen` resets later phases and their reviews but leaves `s["slices"]`,
-  `compliance.rechecks`, downstream `client.reviews` and `stuck`/`attempts`. Reopening
-  `plans` or `architecture` leaves build slices `done`, and the build gate then passes
-  without rework. Audit `state.json` by hand after any reopen, and record the reopen in
-  a test before closing it.
-- `forge-qa` and `forge-redteam` say "Read nothing else" while `forge-design` requires
-  `references/review-checklist.md`. For a design review, pass the checklist in the
-  delegation header.
-- `forge-memory` states that a failed gate is journaled. `cmd_gate` journals approvals
-  only; journal a refusal with `forge memory log`.
-- `forge-discover` points the PRD summary at the validation touchpoint. The PRD
-  touchpoint is `prd`.
-- Rule IDs are out of order in `forge-bootstrap` (BS5 before BS4) and `forge-build`
-  (B6 before B5). Cite them by ID; the order in the file carries no meaning.
+- `.forge/progress.md` is a derived view, never evidence and never hand-edited:
+  `forge progress` regenerates it from `state.json`, `plans/index.md` and the plans, and
+  the build and validation gates regenerate it instead of refusing a stale copy.
+  `forge progress --check` is the refusal, and CI runs it.
+- `prd_problems` measures a requirement after removing its source clause, so
+  `- B1 x (source: user-stated)` is refused. A new `B`, `E`, `V`, `C` or `L` needs 10
+  characters of statement plus a source.
+- `validation_problems` reads the five-column table
+  `test case | verifies | command | result | evidence` and the `TC-` cases of the plans.
+  An ID written after the out-of-scope heading of the PRD is treated as withdrawn and
+  does not count as live.
+- `doc()` in every `tests/*.sh` runs `sed -E 's/<[^>]*>/sample text/g'`, so a fixture
+  replaces each template token wholesale. A case that proves a token is refused writes
+  the token itself instead of going through `doc()`.
+- `forge.TEMPLATES` is the only registry of template paths. A new structure needs its
+  key in `HEADINGS` or `ROW_RULES`, a template under `skills/`, and an anchor `{#slug}`
+  on every heading, or `tests/templates.sh` and `scripts/validate_repo.py` both fail.
 - `hooks/forge_hook.py` and `hooks/opencode-forge.js` mirror each other. A change to one
   needs the same change and a test in the other.
-- `README.md` lists 13 suites; `tests/` holds 14, and `i18n.sh` is unlisted.
-  `docs/STATUS.md` lists 8 agents and `docs/MIGRATION-v2.md` says 8; `agents/` holds 9,
-  and `forge-compliance` is missing from the STATUS list. `MIGRATION-v2.md` says seven
-  phase skills; `skills/` holds 10.
+- `docs/STATUS.md` and `docs/MIGRATION-v2.md` print skill and agent counts by hand.
+  `scripts/validate_repo.py` checks the suite list and the phase registry, not those
+  counts: recount by hand when a skill or an agent is added.
+- The bash suites need a POSIX shell. On this Windows host `python3` is the Microsoft
+  Store stub and `bash.exe` is a WSL stub, so a suite reported as passing from here was
+  not run. `tests/templates.sh`, `tests/validation.sh` and `tests/progress.sh` hold a
+  Python block that runs on its own; CI is the first full run of all of them.
 - The v2 `forge` and `project-rules-architect` skills are quarantined in
   `~/.agents/skills-quarantined-v2/`. They describe a different phase model. Do not
   reinstall them: `docs/MIGRATION-v2.md` records the same instruction.

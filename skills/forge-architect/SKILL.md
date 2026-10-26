@@ -1,6 +1,6 @@
 ---
 name: forge-architect
-description: Forge phase 5. Chooses the stack with justification, splits the product into foundations and vertical slices, and designs data model, API contracts and dependencies. Use when forge status shows phase architecture, or when the user asks for system design, architecture, slices, modules or a data model.
+description: Forge phase architecture. Chooses the stack with justification, splits the product into foundations and vertical slices, and designs data model, API contracts and dependencies. Use when forge status shows phase architecture, or when the user asks for system design, architecture, slices, modules or a data model.
 ---
 
 # Forge Architect

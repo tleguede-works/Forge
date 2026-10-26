@@ -49,13 +49,14 @@ Every deliverable gets a review by `forge-qa` (what is missing) and by `forge-re
 - `hooks/`: Claude Code hook script (wired into `settings.json` by the installer), OpenCode plugin (`opencode-forge.js`).
 - `scripts/install.py`: the installer used by `install.sh` and `install.ps1`.
 - `docs/`: status, improvements under study, escape-hatch audit, migration notes from v2.
-- `tests/`: `e2e.sh`, `design.sh`, `flow.sh`, `adversarial.sh`, `rules.sh`, `rulesphase.sh`, `audit.sh`, `hooks.sh`, `templates.sh`, `compliance.sh`, `loops.sh`, `opencode_plugin.sh`, `install.sh`. Run all thirteen before every change.
+- `tests/`: sixteen POSIX suites, one per mechanism: `e2e.sh`, `design.sh`, `flow.sh`, `validation.sh`, `progress.sh`, `adversarial.sh`, `rules.sh`, `rulesphase.sh`, `audit.sh`, `hooks.sh`, `templates.sh`, `compliance.sh`, `loops.sh`, `opencode_plugin.sh`, `i18n.sh`, `install.sh`. Run all sixteen before every change.
 
 ## Quick check
 
 ```
-for t in e2e design flow adversarial rules rulesphase audit hooks templates compliance loops opencode_plugin install; do bash tests/$t.sh || break; done
-python3 cli/forge.py lint-rules $(find skills agents -name '*.md')
+python3 scripts/validate_repo.py
+python3 cli/forge.py lint-rules AGENTS.md skills agents
+for t in tests/*.sh; do bash "$t" || exit 1; done
 ```
 
 ## Use

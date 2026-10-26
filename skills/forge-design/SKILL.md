@@ -1,6 +1,6 @@
 ---
 name: forge-design
-description: Forge phase 4. Produces the design deliverables - visual references, screen map, layouts, design system and one anatomy file per screen with ranked information hierarchy. Use when forge status shows phase design, or when the user asks for screens, wireframes, UI or UX specs, layouts, or a design system.
+description: Forge phase design. Produces the design deliverables - visual references, screen map, layouts, design system and one anatomy file per screen with ranked information hierarchy. Use when forge status shows phase design, or when the user asks for screens, wireframes, UI or UX specs, layouts, or a design system.
 ---
 
 # Forge Design
@@ -20,7 +20,7 @@ Write every deliverable in the project language. All files live in `.forge/desig
 ## Rules
 
 - **D1 One file, one screen.** One level-1 heading per screen file, starting with the screen ID.
-- **D2 Layout is a contract.** Every screen names a layout defined in `layouts.md`. Every region of every layout becomes a task in the implementation plans (phase plans), and the CLI refuses the plans gate when a region has no task.
+- **D2 Layout is a contract.** Every screen names a layout defined in `layouts.md`. Every region of every layout becomes a task in the implementation plans (the plans phase), and the CLI refuses the plans gate when a region has no task.
 - **D3 Ranked anatomy.** Each zone has a rank, a role, a reason for its position, and an attention level. Exactly one zone is `primary`.
 - **D4 Hierarchy rules H1 to H9** in `references/hierarchy.md` apply to every screen. A deviation names the rule it breaks in its reason cell.
 - **D5 Client touchpoint.** In client mode, present two or three visual directions in plain language at the end of step 1 and record the choice with `forge memory decide`.
