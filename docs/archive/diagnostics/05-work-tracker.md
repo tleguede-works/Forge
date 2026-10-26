@@ -10,7 +10,7 @@ Design only. No existing file in this repository is modified, and no `forge init
 |---|---|
 | `cli/forge.py` (`cmd_slice` 858-886, `gate_problems` 453-508, `drift` 219-230, `next_action` 252-294, `cmd_register` 322-350, `write_now` 552-559, `parse_slices` 766-775, `plans_problems` 813-845, `cmd_client_report` 1271-1296, `op_key` 1409-1431, `record_attempt` 1449-1467) | What is stored, what is only printed, what refuses what |
 | `skills/forge-plan/{SKILL.md,references/plan-template.md,plans-index-template.md}`, `skills/forge-architect/references/slices-format.md`, `skills/forge-build/SKILL.md`, `skills/forge/SKILL.md`, `skills/forge-memory/SKILL.md` | The only stated owners of order, tasks, acceptance, evidence |
-| `docs/LOOPS.md`, `docs/ESCAPE-HATCH-AUDIT.md`, `docs/STATUS.md`, `tests/flow.sh`, `tests/e2e.sh`, `tests/i18n.sh` | Which failures are already named, which are tested |
+| `docs/archive/LOOPS.md`, `docs/ESCAPE-HATCH-AUDIT.md`, `docs/STATUS.md`, `tests/flow.sh`, `tests/e2e.sh`, `tests/i18n.sh` | Which failures are already named, which are tested |
 | v2 clone: `skills/forge/SKILL.md`, `scripts/state.js`, `scripts/lib/forge-lib.js`, `references/state-schema.md`, `skills/project-rules-architect/templates/memory/*` | The precedent: what was tried, what broke |
 
 **Executed** (Python 3.12, `python`, in `%TEMP%\forge-audit-05\`, outside this repository; a `.forge` was built by importing the CLI and calling `forge.save`, not by `forge init`):
@@ -170,7 +170,7 @@ Hand edit, detection and refusal:
 2. `forge progress --check` renders to memory and compares bytes. Different: `PROGRESS STALE: <first differing line>. Run forge progress.`, exit 1. That is the refusal.
 3. `forge progress` overwrites the block and leaves the preamble. It never merges.
 4. `forge gate check` for `build` and `validation` adds that same line to its problem list, so the document is current at the two moments it is handed over. Cost: `gate:check:build` can reach `STUCK` after five identical refusals (F7); accepted, because the remedy is one deterministic command and `record_attempt` clears the counter on the success that follows.
-5. No refusal at `slice start` or `slice done`. Blocking implementation on a view inverts the priorities and reproduces `docs/LOOPS.md:9` (a gate waiting on an act nothing asks for).
+5. No refusal at `slice start` or `slice done`. Blocking implementation on a view inverts the priorities and reproduces `docs/archive/LOOPS.md:9` (a gate waiting on an act nothing asks for).
 
 ### Content contract
 
@@ -316,7 +316,7 @@ Definition of done for an implementation, per `AGENTS.md` I4 and I10: `tests/pro
 
 | Alternative | Argument for | Why it loses |
 |---|---|---|
-| Registered deliverable `work-tracker` in `REQUIRED`, two reviews, gated | It would be reviewed and cannot be silently wrong | F6: every regeneration resets the reviews and creates `DRIFT`; the plans gate would need two reviews per slice completion, which is `docs/LOOPS.md:14` rebuilt by design |
+| Registered deliverable `work-tracker` in `REQUIRED`, two reviews, gated | It would be reviewed and cannot be silently wrong | F6: every regeneration resets the reviews and creates `DRIFT`; the plans gate would need two reviews per slice completion, which is `docs/archive/LOOPS.md:14` rebuilt by design |
 | `forge status --verbose` only, no file | One command, no second copy, the v2 answer (F10) | The owner does not run commands, and `status` is the agent's position, not the plans; the four questions need plan content that `status` does not read |
 | Static file written once at the plans gate, then hand-maintained | Zero code | It becomes the fourth source of truth that I3 forbids, and v2 measured the result: "the tracking said false with no signal" (v2 `SKILL.md:84`) |
 | Tracker generated only at client touchpoints | Fits the existing liaison flow (`skills/forge/SKILL.md:43`) | It would answer "where are we" five times in a project, and never during build, which is the only phase where the question changes daily |

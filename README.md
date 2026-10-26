@@ -2,7 +2,7 @@
 
 Gated, CLI-enforced workflow that turns an idea into a verified, code-ready plan, then builds it slice by slice. Works with Claude Code and OpenCode.
 
-Status: **v3 rebuild in progress.** See `docs/STATUS.md` for what exists and what is pending, and `docs/IMPROVEMENTS.md` for the improvements under study.
+Status: **v3 rebuild in progress.** Start at `docs/README.md`, the index that links the living docs at `docs/` root and the archived analysis under `docs/archive/`.
 
 ## Install
 
@@ -48,7 +48,7 @@ Every deliverable gets a review by `forge-qa` (what is missing) and by `forge-re
 - `agents/`: `forge` (orchestrator), `forge-qa`, `forge-redteam`, `forge-analyst`, `forge-compliance`, `forge-designer`, `forge-architect`, `forge-builder`, `forge-client-liaison`.
 - `hooks/`: Claude Code hook script (wired into `settings.json` by the installer), OpenCode plugin (`opencode-forge.js`).
 - `scripts/install.py`: the installer used by `install.sh` and `install.ps1`.
-- `docs/`: status, improvements under study, escape-hatch audit, migration notes from v2.
+- `docs/`: living docs at the root, indexed by `docs/README.md`; archived analysis in `docs/archive/`.
 - `tests/`: sixteen POSIX suites, one per mechanism: `e2e.sh`, `design.sh`, `flow.sh`, `validation.sh`, `progress.sh`, `adversarial.sh`, `rules.sh`, `rulesphase.sh`, `audit.sh`, `hooks.sh`, `templates.sh`, `compliance.sh`, `loops.sh`, `opencode_plugin.sh`, `i18n.sh`, `install.sh`. Run all sixteen before every change.
 
 ## Quick check

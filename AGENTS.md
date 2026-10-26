@@ -14,6 +14,7 @@ project's language.
 |---|---|
 | `cli/forge.py` | The phase order, the required deliverables, the gates and the checks |
 | `skills/forge/SKILL.md` | Which skill owns which phase, and the golden rules R1–R11 |
+| `docs/README.md` | The index of `docs/`: links living docs at the root and archived analysis in `docs/archive/` |
 | `docs/STATUS.md` | What is built, what is tested, what is not. Trust its prose, not its counts (Known traps) |
 | `docs/ESCAPE-HATCH-AUDIT.md` | Which shortcuts are closed, by what, and which stay judgement |
 
@@ -99,7 +100,7 @@ Cite the ID when you refuse a request or stop.
 | `scripts/install.py` | Global and local install, hooks, manifest, Windows shim |
 | `scripts/validate_repo.py` | The repository validator: skill names, references, phase registry, templates, documented commands, suite listing |
 | `.github/workflows/ci.yml` | Lint, validator, then every suite on push |
-| `docs/` | Status, improvements, audits, migration, loop analysis |
+| `docs/` | Living docs at the root, archived analysis in `docs/archive/`, linked from `docs/README.md` (validator check #8: every file under `docs/` appears in the index) |
 
 ## Commands
 
