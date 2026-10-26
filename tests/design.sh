@@ -48,4 +48,20 @@ ok $F design check
 # layouts must be covered by plans (the forgotten-sidebar case)
 echo "Build LAY-app/content" > .forge/plans/p1.md; fail $F design check --plans
 echo "Build LAY-app/bottom-nav" >> .forge/plans/p1.md; ok $F design check --plans
+# contrast is computed from the two values, not trusted
+cat > $D/design-system.md <<'S'
+# DS
+## Colors
+| Token | Value | On token | Use | Contrast |
+|---|---|---|---|---|
+| color-bg | #FFFFFF | color-bg | page background, non-text | n/a |
+| color-text | #777777 | color-bg | body text | 4.5:1 |
+S
+fail $F design check
+sed -i 's/#777777/#111111/; s/4.5:1/18.9:1/' $D/design-system.md
+ok $F design check
+sed -i 's/18.9:1/2.1:1/' $D/design-system.md
+fail $F design check                                     # a stated ratio the values do not produce
+sed -i 's/2.1:1/18.9:1/' $D/design-system.md
+ok $F design check
 echo "DESIGN PASS"

@@ -29,7 +29,7 @@ echo "# tampered" >> $FH/.forge/skills/forge/SKILL.md; fail $K kit verify       
 cd $(mktemp -d); $K init --name K >/dev/null 2>&1
 $K status 2>&1 | grep -q "KIT MODIFIED" || { echo "FAIL: status does not report the modified kit"; exit 1; }
 $K phase start bootstrap >/dev/null 2>&1
-$K template contract | sed "s/<fill>/x text/" > .forge/contract.md; $K template brief | sed "s/<fill>/x text/" > .forge/brief.md
+$K template contract | sed -E "s/<[^>]*>/x text here/g" > .forge/contract.md; $K template brief | sed -E "s/<[^>]*>/x text here/g" > .forge/brief.md
 $K register contract .forge/contract.md >/dev/null; $K register brief .forge/brief.md >/dev/null
 mkdir -p .forge/reviews
 for n in contract brief; do for ag in qa redteam; do $K review begin $n --agent $ag >/dev/null; echo '{"findings":[]}' > .forge/reviews/$n.$ag.json; $K review record $n --agent $ag --report .forge/reviews/$n.$ag.json >/dev/null; done; done

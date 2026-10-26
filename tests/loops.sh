@@ -8,7 +8,7 @@ ok()   { "$@" >/dev/null 2>&1 || { echo "FAIL (expected success): $*"; exit 1; }
 fail() { "$@" >/dev/null 2>&1 && { echo "FAIL (expected refusal): $*"; exit 1; }; true; }
 says() { local pat="$1"; shift; out=$("$@" 2>&1); echo "$out" | grep -q "$pat" || { echo "FAIL: expected '$pat' from: $*"; echo "$out"; exit 1; }; }
 code() { "$@" >/dev/null 2>&1; echo $?; }
-doc() { $F template "$1" | sed 's/<fill>/sample text/' > "$2"; }
+doc() { $F template "$1" | sed -E 's/<[^>]*>/sample text/g' > "$2"; }
 bump() { echo "- change $RANDOM" >> .forge/contract.md; $F register contract .forge/contract.md >/dev/null; }
 report() { mkdir -p .forge/reviews; echo "$1" > ".forge/reviews/contract.$2.json"; }
 A1='The gate refuses because no review exists for the deliverables; I kept re-running the gate instead of launching the two reviewers once each through the review flow.'

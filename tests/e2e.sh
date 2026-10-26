@@ -4,10 +4,10 @@ set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CLIDIR="$ROOT/cli"; export CLIDIR
 F="python3 $ROOT/cli/forge.py"
-doc() { $F template "$1" | sed 's/<fill>/sample text/' > "$2"; python3 - "$2" "${3:-}" "${4:-}" <<'P'
+doc() { $F template "$1" | sed -E 's/<[^>]*>/sample text/g' > "$2"; python3 - "$2" "${3:-}" "${4:-}" <<'P'
 import sys,re
 p,a,b=sys.argv[1:4]; t=open(p).read()
-if a: t=re.sub(r"(^## [^\n]*\n)", lambda m: m.group(1)+a.replace("\\n","\n")+"\n", t, count=1, flags=re.M)
+if a: t=re.sub(r"(^# [^\n]*\n)", lambda m: m.group(1)+a.replace("\\n","\n")+"\n", t, count=1, flags=re.M)
 if b: t=t.rstrip("\n")+"\n"+b.replace("\\n","\n")+"\n"
 open(p,"w").write(t)
 P
@@ -48,7 +48,7 @@ ok $F mode client --evidence "the user asked for client mode"
 ok $F gate approve --evidence auto                 # landscape is not a client touchpoint
 mut 's["phases"]["compliance"]="approved"'   # compliance is covered by tests/compliance.sh
 ok $F phase start prd
-doc prd .forge/prd.md "- B1 rule"; ok $F register prd .forge/prd.md; review_all prd
+doc prd .forge/prd.md "- B1 a card payment is captured (source: user-stated)"; ok $F register prd .forge/prd.md; review_all prd
 fail $F gate approve --evidence auto               # prd is a touchpoint
 mkdir -p .forge/client; echo "Plain summary for the client" > .forge/client/prd-summary.md
 echo '{"questions":[{"where":"B1","question":"what is B1?"}]}' > .forge/reviews/prd.client.json

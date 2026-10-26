@@ -8,10 +8,10 @@ ok()   { "$@" >/dev/null 2>&1 || { echo "FAIL (expected success): $*"; exit 1; }
 fail() { "$@" >/dev/null 2>&1 && { echo "FAIL (expected refusal): $*"; exit 1; }; true; }
 blocked() { out=$($F gate check 2>&1); echo "$out" | grep -q "$1" || { echo "FAIL: expected '$1' in the gate output:"; echo "$out"; exit 1; }; }
 rv() { $F review begin "$1" --agent "$2" >/dev/null 2>&1 || return 1; mkdir -p .forge/reviews; echo '{"findings":[]}' > ".forge/reviews/${1//:/_}.$2.json"; $F review record "$1" --agent "$2" --report ".forge/reviews/${1//:/_}.$2.json" >/dev/null; }
-doc() { $F template "$1" | sed 's/<fill>/sample text/' > "$2"; python3 - "$2" "${3:-}" "${4:-}" <<'P'
+doc() { $F template "$1" | sed -E 's/<[^>]*>/sample text/g' > "$2"; python3 - "$2" "${3:-}" "${4:-}" <<'P'
 import sys,re
 p,a,b=sys.argv[1:4]; t=open(p).read()
-if a: t=re.sub(r"(^## [^\n]*\n)", lambda m: m.group(1)+a.replace("\\n","\n")+"\n", t, count=1, flags=re.M)
+if a: t=re.sub(r"(^# [^\n]*\n)", lambda m: m.group(1)+a.replace("\\n","\n")+"\n", t, count=1, flags=re.M)
 if b: t=t.rstrip("\n")+"\n"+b.replace("\\n","\n")+"\n"
 open(p,"w").write(t)
 P
@@ -49,7 +49,7 @@ reg "$R1\n$R2"; ok $F gate check
 ok $F gate approve --evidence "register accepted"
 # the PRD must carry every applicable obligation, and cite only real ones
 ok $F phase start prd
-prd() { doc prd .forge/prd.md "- B1 rule\n$1"; ok $F register prd .forge/prd.md; rv prd qa; rv prd redteam; }
+prd() { doc prd .forge/prd.md "- B1 the payment is captured by card (source: user-stated)\n$1"; ok $F register prd .forge/prd.md; rv prd qa; rv prd redteam; }
 prd "- L1 secure payment data (OB-001)"; blocked "covered by no legal requirement"   # OB-002 is covered by no L
 prd "- L1 secure payment data (OB-001)\n- L2 cancel easily (OB-002)\n- L3 invented (OB-099)"; blocked "not an applicable obligation"   # OB-099 does not exist
 prd "- L1 secure payment data (OB-001)\n- L2 cancel easily"; blocked "cites no obligation"   # L2 cites nothing

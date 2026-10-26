@@ -3,10 +3,10 @@
 set -u
 CLIDIR="$(cd "$(dirname "$0")/.." && pwd)/cli"; export CLIDIR
 F="python3 $CLIDIR/forge.py"
-doc() { $F template "$1" | sed 's/<fill>/sample text/' > "$2"; python3 - "$2" "${3:-}" "${4:-}" <<'P'
+doc() { $F template "$1" | sed -E 's/<[^>]*>/sample text/g' > "$2"; python3 - "$2" "${3:-}" "${4:-}" <<'P'
 import sys,re
 p,a,b=sys.argv[1:4]; t=open(p).read()
-if a: t=re.sub(r"(^## [^\n]*\n)", lambda m: m.group(1)+a.replace("\\n","\n")+"\n", t, count=1, flags=re.M)
+if a: t=re.sub(r"(^# [^\n]*\n)", lambda m: m.group(1)+a.replace("\\n","\n")+"\n", t, count=1, flags=re.M)
 if b: t=t.rstrip("\n")+"\n"+b.replace("\\n","\n")+"\n"
 open(p,"w").write(t)
 P
@@ -23,7 +23,7 @@ ok $F init --name Audit
 # 1. Deliverable names have a closed shape (no path tricks into the review folder)
 mut 'for p in forge.PHASES[:forge.PHASES.index("design")]: s["phases"][p]="approved"
 s["phases"]["design"]="in_progress"; s["phase"]["current"]="design"'
-echo "enough body text here" > .forge/x.md
+doc screen .forge/x.md
 fail $F register "screen:../../../outside" .forge/x.md
 fail $F register "screen:home" .forge/x.md
 fail $F register "Plan:S1" .forge/x.md
@@ -39,16 +39,16 @@ $F status | grep -q "forge slice start S01" || { echo "FAIL: build next action d
 D=$(mktemp -d); cd $D; ok $F init --name P
 mut 's["phases"]["bootstrap"]="approved"; s["phases"]["landscape"]="approved"; s["phases"]["compliance"]="approved"; s["phases"]["prd"]="in_progress"; s["phase"]["current"]="prd"'
 rv() { $F review begin "$1" --agent "$2" >/dev/null 2>&1 || return 1; mkdir -p .forge/reviews; echo '{"findings":[]}' > ".forge/reviews/$1.$2.json"; $F review record "$1" --agent "$2" --report ".forge/reviews/$1.$2.json"; }
-doc prd .forge/prd.md "- B1 first\n- B1 second"
+doc prd .forge/prd.md "- B1 a card payment is captured (source: user-stated)\n- B1 a refund is paid within 14 days (source: user-stated)"
 ok $F register prd .forge/prd.md; rv prd qa >/dev/null; rv prd redteam >/dev/null
 fail $F gate check                                          # duplicated id
-doc prd .forge/prd.md "- B1 first" "- B1 withdrawn: reason"
+doc prd .forge/prd.md "- B1 a card payment is captured (source: user-stated)" "- B1 a refund is paid within 14 days: withdrawn, no refunds in the MVP"
 ok $F register prd .forge/prd.md; rv prd qa >/dev/null; rv prd redteam >/dev/null
 fail $F gate check                                          # id both live and withdrawn
 doc prd .forge/prd.md
 ok $F register prd .forge/prd.md; rv prd qa >/dev/null; rv prd redteam >/dev/null
 fail $F gate check                                          # no id at all
-doc prd .forge/prd.md "- B1 first\n- E1 edge"
+doc prd .forge/prd.md "- B1 a card payment is captured (source: user-stated)\n- E1 a declined card shows a retry message (source: user-stated)"
 ok $F register prd .forge/prd.md; rv prd qa >/dev/null; rv prd redteam >/dev/null
 ok $F gate check
 # 4. Roadmap covers every live requirement and invents none

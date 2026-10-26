@@ -9,12 +9,12 @@ fail() { "$@" >/dev/null 2>&1 && { echo "FAIL (expected refusal): $*"; exit 1; }
 cat > .forge/prd.md <<'P'
 # PRD
 ## 3. Business rules
-- B1 Users pay by card
-- B2 Refund within 14 days
+- B1 users pay by card (source: user-stated)
+- B2 a refund is issued within 14 days (source: user-stated)
 ## 4. Edge cases
-- E1 Card declined
+- E1 a declined card shows a retry message (source: user-stated)
 ## 9. Out of scope
-- B3 Multi-tenant: dropped, no second client
+- B3 multi-tenant support: dropped, no second client
 P
 cat > .forge/slices.md <<'S'
 | id | name | module | serves |
@@ -63,6 +63,7 @@ for p in ["bootstrap","landscape","compliance","prd","roadmap","design","archite
 s["phases"]["build"]="in_progress"; s["phase"]["current"]="build"; forge.save(R,s)
 P
 ok $F slice start S01
+mkdir -p tests; printf 'def test_pay():\n    assert True\n' > tests/test_pay.py
 fail $F slice done S01 --evidence "tests pass"
 ok $F slice done S01 --evidence "pytest tests/test_pay.py : 4 passed"
 ok $F gate check
