@@ -1,0 +1,52 @@
+// Codespaces / devcontainer definition.
+//
+// Goal: a codespace that is usable the moment it finishes building -- OpenCode v2
+// installed, skills present. Everything version-specific is either "latest" or pinned
+// to a major, so this file does not need editing every few weeks.
+{
+  "name": "bi-dashboard-platform",
+
+  // Ubuntu, not a language image: the project has no package.json yet, and the base
+  // image ships curl + tar + git, which is all the OpenCode installer needs.
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": false,
+      "configureZshAsDefaultShell": false,
+      "upgradePackages": false
+    },
+
+    // node serves two masters here: `npx skills add ...`, and the Forge outillage,
+    // which is CommonJS run by `node` and must never be run by bun (AGENTS.md, §Commandes).
+    //
+    // Once the skeleton lands, `.node-version` exists (ADR-008) and this feature is
+    // replaced by fnm reading that file. Do not freeze a version here in the meantime:
+    // two sources of truth for the runtime version is exactly what ADR-008 forbids.
+    "ghcr.io/devcontainers/features/node:2": {
+      "version": "lts"
+    },
+
+    // ADR-008: the project package manager is bun, not npm.
+    // devcontainers-extra, not devcontainers/features: there is no official bun feature.
+    "ghcr.io/devcontainers-extra/features/bun:1": {
+      "version": "latest"
+    },
+
+    // The skills installer falls back to `gh` for GitHub API lookups, and every
+    // codespace workflow eventually needs PRs and issues.
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  "remoteUser": "vscode",
+
+  // Runs after the workspace is cloned, once per codespace creation.
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  "customizations": {
+    "codespaces": {
+      // A new session reads this before opening anything else.
+      "openFiles": ["AGENTS.md", "SESSION_LOG.md"]
+    }
+  }
+}
