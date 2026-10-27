@@ -117,6 +117,25 @@ for n in sorted(named):
     if n not in skills and n not in agents:
         bad(f"AGENTS.md names `{n}`, which is neither a skill nor an agent")
 
+# 8. docs/README.md is the index of docs/: it lists every document that exists there, so a
+#    live file cannot hide in the tree and an archived one cannot be mistaken for live.
+docs_index = ROOT / "docs" / "README.md"
+actual = {str(p.relative_to(ROOT / "docs")).replace("\\", "/")
+          for p in (ROOT / "docs").rglob("*.md")} - {"README.md"}
+if not docs_index.is_file():
+    bad("docs/README.md: missing")
+else:
+    tokens = set(re.findall(r"`([\w./-]+)`", docs_index.read_text(encoding="utf-8")))
+    listed_files = {t for t in tokens if t.endswith(".md")
+                    and not t.startswith(("cli/", "skills/", "scripts/"))}
+    listed_dirs = {t.rstrip("/") for t in tokens if t.endswith("/") and t.startswith("archive/")}
+    covered = {p for p in actual
+               if p in listed_files or any(p.startswith(d + "/") for d in listed_dirs)}
+    for p in sorted(listed_files - actual):
+        bad(f"docs/README.md: lists {p}, which does not exist")
+    for p in sorted(actual - covered):
+        bad(f"docs/README.md: {p} is not listed (a live doc belongs at the root, the rest in archive/)")
+
 print(f"skills: {len(skills)}  agents: {len(agents)}  suites: {len(suites)}  commands: {len(commands)}")
 for p in problems:
     print("FAIL:", p)

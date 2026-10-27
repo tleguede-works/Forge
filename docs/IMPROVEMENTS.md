@@ -8,7 +8,7 @@ Status values: `to study`, `design written`, `implemented`.
 
 | Rank | Item | Why this rank | Effort | Depends on |
 |---|---|---|---|---|
-| 1 | I-006 Full audit (first pass done: `docs/AUDIT-2026-10-19.md`) | Cheap, and it finds defects that would corrupt every later test. Two real holes are already known (see the item) | Medium | none |
+| 1 | I-006 Full audit (first pass done: `docs/archive/AUDIT-2026-10-19.md`) | Cheap, and it finds defects that would corrupt every later test. Two real holes are already known (see the item) | Medium | none |
 | 2 | I-004 Regulatory compliance (first version done) | It changes the phase list, so it must be decided before the end-to-end test; the demo target (banking) is a regulated sector | Medium, mostly design | I-006 findings |
 | 3 | I-005 End-to-end test: Togo mobile banking demo | Proves the system on a real case and supports the owner's business goal; it should exercise compliance, so it follows rank 2 | Medium | I-006, I-004; needs an environment with real sub-agents |
 | 4 | I-001 Verification before every commit | Well bounded, high value in the build phase, but the end-to-end test stops before the build, so it can wait | Medium | I-006 |
@@ -275,7 +275,7 @@ Validate Forge on a real case from the initial request to the end of the prepara
 
 ---
 
-## I-006 Full audit of the system and the repository (first pass done, see `docs/AUDIT-2026-10-19.md`)
+## I-006 Full audit of the system and the repository (first pass done, see `docs/archive/AUDIT-2026-10-19.md`)
 
 ### Goal
 
@@ -322,11 +322,11 @@ Continue a client project that was started with the older Forge, from where it s
 
 - Resume from the existing `.forge`, without installing the new version in that project.
 - Exploit what the folder already holds; do not restart questions that were answered.
-- Avoid the loop seen at Bootstrap (see `docs/LOOPS.md`).
+- Avoid the loop seen at Bootstrap (see `docs/archive/LOOPS.md`).
 
 ### Facts and gaps
 
-- The project folder, the prompt used and the loop transcript were not available when the loops were analysed. The causes in `docs/LOOPS.md` come from the instructions, not from the log.
+- The project folder, the prompt used and the loop transcript were not available when the loops were analysed. The causes in `docs/archive/LOOPS.md` come from the instructions, not from the log.
 - `docs/MIGRATION-v2.md` says there is no automatic migration, because v2 approvals cannot be trusted. That conflicts with the wish not to ask again; the study has to separate answers (reusable) from approvals (not reusable).
 
 ### Questions

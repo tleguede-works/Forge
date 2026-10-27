@@ -5,7 +5,7 @@ lacks, why each one matters, and the test that would prove it is done. Nothing h
 defect of the current gates: every item is a capability, not a shortcut. An item leaves
 this file only when it ships with its test.
 
-Read `docs/diagnostics/04-v2-parity.md` for the evidence behind each row.
+Read `docs/archive/diagnostics/04-v2-parity.md` for the evidence behind each row.
 
 ## Closed by the 2026-10 correction
 

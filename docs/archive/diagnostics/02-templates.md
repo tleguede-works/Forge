@@ -210,7 +210,7 @@ and generators, not forms a model fills.
   `structure_problems: []`; `prd_problems: []`; `coverage_problems: []`;
   `roadmap_problems: []`; `compliance_prd_problems: []`. The file was 514 bytes and 31
   lines and read `## 3. Business rules` / `- B1 <rule> (source: landscape row / user-stated)`.
-  `docs/AUDIT-2026-10-19.md:51` records the intent: "refuses empty sections and `<fill>`
+  `docs/archive/AUDIT-2026-10-19.md:51` records the intent: "refuses empty sections and `<fill>`
   markers".
 - **Impact** The escape hatch sits exactly where a weak model starts. Everything the
   registration check was built to prevent (an unfilled form reaching a reviewer as if it
